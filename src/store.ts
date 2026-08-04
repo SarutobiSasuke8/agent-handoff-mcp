@@ -197,7 +197,7 @@ export class HandoffStore {
 
   public events(handoffId: string): HandoffEvent[] {
     const rows = this.db.prepare(
-      "SELECT * FROM handoff_events WHERE handoff_id = ? ORDER BY created_at, id",
+      "SELECT * FROM handoff_events WHERE handoff_id = ? ORDER BY created_at, rowid",
     ).all(handoffId) as unknown as EventRow[];
     return rows.map(toEvent);
   }
