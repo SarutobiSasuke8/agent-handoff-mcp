@@ -1,0 +1,18 @@
+version: 1
+agents:
+  - id: example-claude
+    display_name: Claude
+    enabled: true
+    send_to: [example-codex]
+    receive_from: [example-codex]
+    disclosure_ceiling: internal
+    token_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+    expires_at: 2027-01-01T00:00:00Z
+  - id: example-codex
+    display_name: Codex
+    enabled: true
+    send_to: [example-claude]
+    receive_from: [example-claude]
+    disclosure_ceiling: internal
+    token_sha256: "1111111111111111111111111111111111111111111111111111111111111111"
+    expires_at: 2027-01-01T00:00:00Z

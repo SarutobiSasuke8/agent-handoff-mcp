@@ -1,0 +1,72 @@
+{
+  "name": "@sarutobi/agent-handoff-mcp",
+  "version": "0.1.0",
+  "description": "A local-first MCP server for bounded, auditable handoffs between AI agents.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "ai-agents",
+    "handoff",
+    "multi-agent"
+  ],
+  "bin": {
+    "agent-handoff-http": "dist/src/http.js",
+    "agent-handoff-stdio": "dist/src/stdio.js",
+    "agent-handoff-token": "scripts/generate-token.mjs"
+  },
+  "exports": {
+    ".": "./dist/src/server.js",
+    "./http": "./dist/src/http.js",
+    "./stdio": "./dist/src/stdio.js",
+    "./registry": "./dist/src/registry.js",
+    "./service": "./dist/src/service.js",
+    "./store": "./dist/src/store.js"
+  },
+  "files": [
+    "dist",
+    "scripts/generate-token.mjs",
+    "config/agents.example.yaml",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "dev": "node --watch --env-file-if-exists=.env --import tsx src/http.ts",
+    "dev:stdio": "node --env-file-if-exists=.env --import tsx src/stdio.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node --env-file-if-exists=.env dist/src/http.js",
+    "start:stdio": "node --env-file-if-exists=.env dist/src/stdio.js",
+    "token:new": "node scripts/generate-token.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "test": "npm run build && node --test \"dist/test/*.test.js\"",
+    "check": "npm run typecheck && npm run lint && npm test",
+    "prepare": "npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/express": "2.0.0",
+    "@modelcontextprotocol/node": "2.0.0",
+    "@modelcontextprotocol/server": "2.0.0",
+    "express": "5.2.1",
+    "express-rate-limit": "8.6.1",
+    "helmet": "8.3.0",
+    "yaml": "2.9.0",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.2",
+    "@types/express": "5.0.6",
+    "@types/node": "22.19.15",
+    "eslint": "10.8.0",
+    "tsx": "4.20.6",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.66.0"
+  },
+  "overrides": {
+    "@hono/node-server": "2.0.12"
+  }
+}
