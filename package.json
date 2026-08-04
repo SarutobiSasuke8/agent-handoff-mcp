@@ -3,6 +3,18 @@
   "version": "0.1.0",
   "description": "A local-first MCP server for bounded, auditable handoffs between AI agents.",
   "license": "Apache-2.0",
+  "author": "Alexei Udall",
+  "homepage": "https://github.com/SarutobiSasuke8/agent-handoff-mcp#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SarutobiSasuke8/agent-handoff-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/SarutobiSasuke8/agent-handoff-mcp/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "engines": {
     "node": ">=22.13"
@@ -28,7 +40,7 @@
     "./store": "./dist/src/store.js"
   },
   "files": [
-    "dist",
+    "dist/src",
     "scripts/generate-token.mjs",
     "config/agents.example.yaml",
     "README.md",
