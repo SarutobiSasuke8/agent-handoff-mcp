@@ -1,5 +1,5 @@
 {
-  "name": "@sarutobi/agent-handoff-mcp",
+  "name": "@sarutobi-sasuke/agent-handoff-mcp",
   "version": "0.1.0",
   "description": "A local-first MCP server for bounded, auditable handoffs between AI agents.",
   "license": "Apache-2.0",

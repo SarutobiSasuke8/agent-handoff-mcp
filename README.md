@@ -49,6 +49,14 @@ The server coordinates work; it does not execute agents, fetch references, read 
 
 Requirements: Node.js 22.13 or newer.
 
+Run directly from npm:
+
+```bash
+npx -y @sarutobi-sasuke/agent-handoff-mcp
+```
+
+For a source checkout:
+
 ```bash
 git clone https://github.com/SarutobiSasuke8/agent-handoff-mcp.git
 cd agent-handoff-mcp

@@ -39,7 +39,7 @@ considered stable.
 
 ### Packaging
 
-- Published as `@sarutobi/agent-handoff-mcp` with three binaries:
+- Prepared as `@sarutobi-sasuke/agent-handoff-mcp` with three binaries:
   `agent-handoff-http`, `agent-handoff-stdio`, and `agent-handoff-token`.
 - Requires Node 22.13 or later.
 
