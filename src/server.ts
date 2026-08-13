@@ -53,9 +53,10 @@ export function createHandoffMcpServer(service: HandoffService, fixedAgentId?: s
     {
       title: "Show handoff identity",
       description: "Show the authenticated agent identity and communication boundaries.",
+      inputSchema: z.strictObject({}),
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     },
-    async (context) => runTool(context, fixedAgentId, (id) => service.whoami(id)),
+    async (_input, context) => runTool(context, fixedAgentId, (id) => service.whoami(id)),
   );
 
   server.registerTool(
@@ -63,7 +64,7 @@ export function createHandoffMcpServer(service: HandoffService, fixedAgentId?: s
     {
       title: "Send an agent handoff",
       description: "Create a bounded handoff for another authorized agent. References are stored, never dereferenced.",
-      inputSchema: z.object({
+      inputSchema: z.strictObject({
         recipient: agentId,
         title: z.string().trim().min(1).max(160),
         summary: z.string().trim().min(1).max(2_000),
@@ -100,14 +101,14 @@ export function createHandoffMcpServer(service: HandoffService, fixedAgentId?: s
     {
       title: "List agent inbox",
       description: "List handoffs addressed to the authenticated agent.",
-      inputSchema: z.object({
+      inputSchema: z.strictObject({
         statuses: z.array(handoffStatusSchema).min(1).max(5).optional(),
         limit: z.number().int().min(1).max(100).default(20),
       }),
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     },
-    async ({ statuses, limit }, context) => runTool(context, fixedAgentId, (id) => ({
-      handoffs: service.inbox(id, statuses ?? defaultStatuses(), limit),
+    async ({ statuses, limit }, context) => runTool(context, fixedAgentId, async (id) => ({
+      handoffs: await service.inbox(id, statuses ?? defaultStatuses(), limit),
     })),
   );
 
@@ -116,10 +117,10 @@ export function createHandoffMcpServer(service: HandoffService, fixedAgentId?: s
     {
       title: "Read a handoff",
       description: "Read one handoff and its event history. Only its sender and recipient may read it.",
-      inputSchema: z.object({ handoff_id: z.uuid() }),
+      inputSchema: z.strictObject({ handoff_id: z.uuid() }),
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     },
-    async ({ handoff_id }, context) => runTool(context, fixedAgentId, (id) => service.get(id, handoff_id)),
+    async ({ handoff_id }, context) => runTool(context, fixedAgentId, async (id) => service.get(id, handoff_id)),
   );
 
   server.registerTool(
@@ -127,11 +128,11 @@ export function createHandoffMcpServer(service: HandoffService, fixedAgentId?: s
     {
       title: "Acknowledge a handoff",
       description: "Accept a queued or blocked handoff addressed to the authenticated agent.",
-      inputSchema: z.object({ handoff_id: z.uuid(), note: shortText.optional() }),
+      inputSchema: z.strictObject({ handoff_id: z.uuid(), note: shortText.optional() }),
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     },
-    async ({ handoff_id, note }, context) => runTool(context, fixedAgentId, (id) => ({
-      handoff: service.acknowledge(id, handoff_id, note),
+    async ({ handoff_id, note }, context) => runTool(context, fixedAgentId, async (id) => ({
+      handoff: await service.acknowledge(id, handoff_id, note),
     })),
   );
 
@@ -140,15 +141,15 @@ export function createHandoffMcpServer(service: HandoffService, fixedAgentId?: s
     {
       title: "Update handoff status",
       description: "Mark an accepted handoff blocked or completed, or let its sender cancel it while queued.",
-      inputSchema: z.object({
+      inputSchema: z.strictObject({
         handoff_id: z.uuid(),
         status: z.enum(["blocked", "completed", "cancelled"]),
         note: shortText.optional(),
       }),
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     },
-    async ({ handoff_id, status, note }, context) => runTool(context, fixedAgentId, (id) => ({
-      handoff: service.updateStatus(id, handoff_id, status, note),
+    async ({ handoff_id, status, note }, context) => runTool(context, fixedAgentId, async (id) => ({
+      handoff: await service.updateStatus(id, handoff_id, status, note),
     })),
   );
 

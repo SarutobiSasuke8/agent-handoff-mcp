@@ -1,12 +1,25 @@
 import { Buffer } from "node:buffer";
 
-import type { AgentRegistry } from "./registry.js";
+import { permitsSensitivity } from "./registry.js";
+
+import type { AgentRegistry, PolicySnapshot } from "./registry.js";
 import type { HandoffStore } from "./store.js";
-import type { CreateHandoffInput, Handoff, HandoffStatus, Sensitivity } from "./types.js";
+import type { AgentDefinition, CreateHandoffInput, Handoff, HandoffStatus, Sensitivity } from "./types.js";
 
 export interface ServiceOptions {
   maxMessageBytes: number;
   maxHandoffDepth: number;
+}
+
+interface Principal {
+  snapshot: PolicySnapshot;
+  agent: AgentDefinition;
+}
+
+function inaccessible(handoffId: string): Error {
+  // One error shape for "does not exist" and "exists but is not accessible",
+  // so a revoked or unrelated principal gains no existence oracle.
+  return new Error(`Handoff '${handoffId}' was not found or is not accessible to this identity.`);
 }
 
 export class HandoffService {
@@ -17,55 +30,85 @@ export class HandoffService {
   ) {}
 
   public async whoami(agentId: string): Promise<Record<string, unknown>> {
-    const agent = await this.registry.get(agentId);
+    const { snapshot, agent } = await this.principal(agentId);
     return {
       agent_id: agent.id,
       display_name: agent.displayName,
       disclosure_ceiling: agent.disclosureCeiling,
       send_to: agent.sendTo,
       receive_from: agent.receiveFrom,
+      policy_revision: snapshot.revision,
     };
   }
 
   public async send(agentId: string, input: CreateHandoffInput): Promise<Handoff> {
     this.assertMessageSize(input);
-    await this.registry.assertCanSend(agentId, input.recipient, input.sensitivity);
+    const principal = await this.principal(agentId);
+    principal.snapshot.assertCanSend(agentId, input.recipient, input.sensitivity);
     if (input.parentId) {
-      const parent = this.store.get(input.parentId);
-      this.assertParticipant(agentId, parent);
+      const parent = this.store.find(input.parentId);
+      if (!parent || !this.canAccess(principal, parent)) throw inaccessible(input.parentId);
     }
     return this.store.create(agentId, input, this.options.maxHandoffDepth);
   }
 
-  public inbox(agentId: string, statuses: HandoffStatus[], limit: number): Handoff[] {
-    return this.store.inbox(agentId, statuses, limit);
+  public async inbox(agentId: string, statuses: HandoffStatus[], limit: number): Promise<Handoff[]> {
+    const principal = await this.principal(agentId);
+    return this.store.inbox(agentId, statuses, limit).filter((handoff) => this.canAccess(principal, handoff));
   }
 
-  public get(agentId: string, handoffId: string): { handoff: Handoff; events: unknown[] } {
-    const handoff = this.store.get(handoffId);
-    this.assertParticipant(agentId, handoff);
+  public async get(agentId: string, handoffId: string): Promise<{ handoff: Handoff; events: unknown[] }> {
+    const principal = await this.principal(agentId);
+    const handoff = this.store.find(handoffId);
+    if (!handoff || !this.canAccess(principal, handoff)) throw inaccessible(handoffId);
     return { handoff, events: this.store.events(handoffId) };
   }
 
-  public acknowledge(agentId: string, handoffId: string, note?: string): Handoff {
-    if (note) this.assertTextSize(note, "note");
-    return this.store.transition(handoffId, agentId, "accepted", note);
+  public async acknowledge(agentId: string, handoffId: string, note?: string): Promise<Handoff> {
+    return this.transition(agentId, handoffId, "accepted", note);
   }
 
-  public updateStatus(
+  public async updateStatus(
     agentId: string,
     handoffId: string,
     status: "blocked" | "completed" | "cancelled",
     note?: string,
-  ): Handoff {
+  ): Promise<Handoff> {
+    return this.transition(agentId, handoffId, status, note);
+  }
+
+  private async transition(
+    agentId: string,
+    handoffId: string,
+    status: Exclude<HandoffStatus, "queued">,
+    note?: string,
+  ): Promise<Handoff> {
     if (note) this.assertTextSize(note, "note");
+    const principal = await this.principal(agentId);
+    const handoff = this.store.find(handoffId);
+    if (!handoff || !this.canAccess(principal, handoff)) throw inaccessible(handoffId);
     return this.store.transition(handoffId, agentId, status, note);
   }
 
-  private assertParticipant(agentId: string, handoff: Handoff): void {
-    if (handoff.sender !== agentId && handoff.recipient !== agentId) {
-      throw new Error(`Agent '${agentId}' is not a participant in handoff '${handoff.id}'.`);
-    }
+  /**
+   * Resolve the request-scoped principal against one current policy snapshot.
+   * Enabled state and expiry are rechecked on every operation, so registry
+   * changes revoke access mid-session on both transports without a restart.
+   */
+  private async principal(agentId: string): Promise<Principal> {
+    const snapshot = await this.registry.current();
+    return { snapshot, agent: snapshot.resolveActive(agentId) };
+  }
+
+  /**
+   * Current-policy access check for stored handoffs. Historical reads are
+   * denied by default once the sender-to-recipient relationship is removed or
+   * the principal's disclosure ceiling drops below the handoff's sensitivity.
+   */
+  private canAccess(principal: Principal, handoff: Handoff): boolean {
+    if (handoff.sender !== principal.agent.id && handoff.recipient !== principal.agent.id) return false;
+    if (!permitsSensitivity(principal.agent, handoff.sensitivity)) return false;
+    return principal.snapshot.relationshipAllowed(handoff.sender, handoff.recipient);
   }
 
   private assertMessageSize(input: CreateHandoffInput): void {

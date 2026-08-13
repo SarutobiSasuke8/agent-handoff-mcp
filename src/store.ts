@@ -182,9 +182,14 @@ export class HandoffStore {
   }
 
   public get(id: string): Handoff {
+    const handoff = this.find(id);
+    if (!handoff) throw new Error(`Handoff '${id}' was not found.`);
+    return handoff;
+  }
+
+  public find(id: string): Handoff | undefined {
     const row = this.db.prepare("SELECT * FROM handoffs WHERE id = ?").get(id) as HandoffRow | undefined;
-    if (!row) throw new Error(`Handoff '${id}' was not found.`);
-    return toHandoff(row);
+    return row ? toHandoff(row) : undefined;
   }
 
   public inbox(recipient: string, statuses: HandoffStatus[], limit: number): Handoff[] {

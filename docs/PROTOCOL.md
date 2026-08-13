@@ -41,6 +41,10 @@ Both sides must allow the relationship:
 
 Only the sender and recipient may read the handoff or event history. Only the recipient may accept, block, or complete. Only the sender may cancel, and only while queued.
 
+Authorization is evaluated against the current policy on every operation, including reads and transitions. If the principal is disabled or expired, if the sender-to-recipient relationship is removed, or if the principal's disclosure ceiling drops below the handoff's stored sensitivity, access to that handoff is denied until the operator restores the policy. A disabled counterparty does not by itself block access to existing handoffs; removing the relationship does.
+
+A handoff that does not exist and a handoff the principal may not access produce the same error shape, so error text cannot be used to probe for the existence of other agents' work.
+
 ## Replies and loop control
 
 A response that needs new work is a new handoff with `parent_id`, not a mutation of the original request. The child inherits the thread identifier and increments depth.
