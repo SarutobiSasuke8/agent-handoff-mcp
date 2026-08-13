@@ -42,7 +42,10 @@ export async function buildHttpApp(config: AppConfig): Promise<HttpApp> {
   });
   app.disable("x-powered-by");
   if (config.trustProxyHops > 0) app.set("trust proxy", config.trustProxyHops);
-  app.use(helmet({ strictTransportSecurity: false, contentSecurityPolicy: false }));
+  // Helmet defaults, including a restrictive Content-Security-Policy. The
+  // server only emits JSON and SSE, so the default CSP costs nothing and the
+  // headers protect any browser that is pointed at an endpoint directly.
+  app.use(helmet());
 
   const verifier = new RegistryTokenVerifier(registry);
   const limiter = rateLimit({
