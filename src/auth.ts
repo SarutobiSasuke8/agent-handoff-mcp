@@ -21,7 +21,8 @@ export class RegistryTokenVerifier implements OAuthTokenVerifier {
   public async verifyAccessToken(token: string): Promise<AuthInfo> {
     const digest = sha256(token);
     const now = Math.floor(Date.now() / 1000);
-    const agent = (await this.registry.all()).find(
+    const snapshot = await this.registry.current();
+    const agent = snapshot.all().find(
       (candidate) => candidate.enabled && candidate.tokenSha256 && hashEquals(digest, candidate.tokenSha256),
     );
     if (!agent || !agent.expiresAt || agent.expiresAt <= now) {
