@@ -1,8 +1,16 @@
+# Example agent registry with synthetic identities.
+# Copy to config/agents.yaml (which stays out of source control) and adapt.
+#
+# Every field shown is required for each identity; there are no permissive
+# defaults. The example identities are disabled and their token hashes are
+# placeholders that can never match a real token. Provision real credentials
+# with: agent-handoff-mcp issue --registry <path> --agent <id> --expires <iso>
+# then set enabled: true per identity.
 version: 1
 agents:
   - id: example-claude
     display_name: Claude
-    enabled: true
+    enabled: false
     send_to: [example-codex]
     receive_from: [example-codex]
     disclosure_ceiling: internal
@@ -10,7 +18,7 @@ agents:
     expires_at: 2027-01-01T00:00:00Z
   - id: example-codex
     display_name: Codex
-    enabled: true
+    enabled: false
     send_to: [example-claude]
     receive_from: [example-claude]
     disclosure_ceiling: internal

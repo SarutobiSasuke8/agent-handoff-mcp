@@ -27,9 +27,11 @@
     "multi-agent"
   ],
   "bin": {
+    "agent-handoff-mcp": "dist/src/cli.js",
     "agent-handoff-http": "dist/src/http.js",
     "agent-handoff-stdio": "dist/src/stdio.js",
-    "agent-handoff-token": "scripts/generate-token.mjs"
+    "agent-handoff-token": "scripts/generate-token.mjs",
+    "agent-handoff-validate": "dist/src/bin-validate.js"
   },
   "exports": {
     ".": "./dist/src/server.js",
@@ -43,7 +45,14 @@
     "dist/src",
     "scripts/generate-token.mjs",
     "config/agents.example.yaml",
+    "schema",
+    "docs",
+    ".env.example",
     "README.md",
+    "CHANGELOG.md",
+    "SECURITY.md",
+    "ROADMAP.md",
+    "CONTRIBUTING.md",
     "LICENSE"
   ],
   "scripts": {
@@ -56,7 +65,10 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint .",
     "test": "npm run build && node --test \"dist/test/*.test.js\"",
+    "test:e2e": "npm run build && node --test --test-concurrency=1 \"dist/test/e2e/*.test.js\"",
+    "schema:write": "npm run build && node scripts/write-schema.mjs",
     "check": "npm run typecheck && npm run lint && npm test",
+    "prepublishOnly": "npm run check && npm run test:e2e && node scripts/verify-pack.mjs",
     "prepare": "npm run build"
   },
   "dependencies": {
@@ -71,6 +83,7 @@
   },
   "devDependencies": {
     "@eslint/js": "9.39.2",
+    "@modelcontextprotocol/client": "^2.0.0",
     "@types/express": "5.0.6",
     "@types/node": "22.19.15",
     "eslint": "10.8.0",
