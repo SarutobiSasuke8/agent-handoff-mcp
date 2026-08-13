@@ -1,0 +1,67 @@
+# Release workflow: publishes @sarutobi-sasuke/agent-handoff-mcp to npm with
+# provenance via npm trusted publishing (OIDC). It never runs automatically:
+# it is triggered manually (workflow_dispatch) or by pushing a version tag.
+#
+# Owner prerequisites before the first run:
+#   1. On npmjs.com, create the package scope and register this repository and
+#      workflow (release.yml) as a trusted publisher for
+#      @sarutobi-sasuke/agent-handoff-mcp. No npm token is stored in GitHub.
+#   2. Confirm CHANGELOG.md, package.json version, and the tag all agree.
+#   3. Trigger the workflow from the Actions tab (or push the v* tag).
+name: Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions: {}
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Required for npm trusted publishing (OIDC) and provenance.
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22.x"
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      - name: Full check
+        run: npm run check
+      - name: End-to-end conformance
+        run: npm run test:e2e
+      - name: Verify tarball allowlist
+        run: node scripts/verify-pack.mjs
+      - name: Verify tag matches package version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          PKG_VERSION="$(node -p "require('./package.json').version")"
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
+            echo "Tag $TAG_VERSION does not match package.json version $PKG_VERSION"
+            exit 1
+          fi
+      - name: Generate SBOM
+        run: npm sbom --sbom-format=spdx --omit=dev > sbom.spdx.json
+      - name: Pack artifact and checksum
+        run: |
+          npm pack
+          sha256sum ./*.tgz > checksums.sha256
+      - name: Upload release evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-evidence
+          path: |
+            *.tgz
+            checksums.sha256
+            sbom.spdx.json
+          retention-days: 90
+      - name: Publish to npm with provenance
+        run: npm publish --provenance --access public
