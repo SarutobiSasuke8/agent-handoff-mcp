@@ -7,10 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.1.0] - 2026-08-04
-
-First release. The protocol core is complete and the six core tools are
-considered stable.
+`0.1.0` is the first release candidate. It has not been published to npm and
+no Git tag or GitHub release exists yet; everything below describes the
+candidate on `main`.
 
 ### Added
 
@@ -30,18 +29,42 @@ considered stable.
 - Reply-chain depth guard to stop agents looping handoffs between themselves.
 - Bearer token authentication. Tokens are stored in the registry only as
   SHA-256 digests, compared in constant time, and carry an expiry. Raw tokens
-  are shown once by the generation script (`npm run token:new`) and never
-  persisted.
+  are shown once at issue time and never persisted.
+- Strict registry validation with immutable policy snapshots: unknown keys,
+  duplicate ids/tokens/relationships, unknown targets, mixed wildcards,
+  unsupported schema versions, and malformed expiry data are rejected with
+  field-specific, redacted errors. Missing security fields are validation
+  failures, never permissive defaults.
+- Current-policy authorisation on every tool call: enabled state, expiry,
+  relationships, disclosure ceiling, and participant role are rechecked before
+  reads and transitions on both transports, so revocation takes effect on live
+  sessions without a restart. Historical reads default to deny after
+  relationship removal or ceiling reduction, and missing versus inaccessible
+  handoffs share one error shape.
+- Degraded-policy handling: a partial or invalid registry write keeps the
+  prior valid policy active and is surfaced through `/healthz` and `/readyz`.
+- `agent-handoff-mcp` dispatcher binary (subcommands `http`, `stdio`, `token`,
+  `validate`, `init`, `issue`, `rotate`, `enable`, `disable`, `revoke`) plus a
+  versioned registry JSON Schema in `schema/`.
 - Test coverage for authorisation boundaries, lifecycle transitions,
-  idempotency, event ordering, and depth capping.
-- CI running typecheck, lint, and the test suite on every push and pull
-  request.
+  idempotency, event ordering, depth capping, registry strictness regressions,
+  policy reload and degradation, and provisioning.
+- End-to-end conformance suites: HTTP/stdio revocation parity with a real MCP
+  client, token rotation, restart persistence, origin and rate-limit checks,
+  and a clean-room install of the packed tarball driving both transports.
+- CI matrix across Ubuntu and Windows on Node 22.13, 22.x, and 24.x, with a
+  provenance-ready release workflow (npm trusted publishing, SBOM) that is
+  gated on the owner registering the trusted publisher on npmjs.com.
 
 ### Packaging
 
-- Published as `@sarutobi/agent-handoff-mcp` with three binaries:
-  `agent-handoff-http`, `agent-handoff-stdio`, and `agent-handoff-token`.
+- Prepared as `@sarutobi-sasuke/agent-handoff-mcp` (not yet published) with a
+  default `agent-handoff-mcp` dispatcher binary and `agent-handoff-http`,
+  `agent-handoff-stdio`, `agent-handoff-token`, and `agent-handoff-validate`
+  aliases.
+- The tarball ships the documentation and configuration the README references:
+  `docs/`, `schema/`, `.env.example`, `config/agents.example.yaml`,
+  `SECURITY.md`, `CHANGELOG.md`, `ROADMAP.md`, and `CONTRIBUTING.md`.
 - Requires Node 22.13 or later.
 
-[Unreleased]: https://github.com/SarutobiSasuke8/agent-handoff-mcp/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/SarutobiSasuke8/agent-handoff-mcp/releases/tag/v0.1.0
+[Unreleased]: https://github.com/SarutobiSasuke8/agent-handoff-mcp/commits/main
