@@ -10,12 +10,36 @@ permissions:
 
 jobs:
   check:
-    runs-on: ubuntu-latest
+    name: check (${{ matrix.os }}, node ${{ matrix.node }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        # 22.13 is the documented minimum, 22.x the current LTS line, 24.x the
+        # line where node:sqlite is no longer experimental.
+        node: ["22.13.1", "22.x", "24.x"]
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 22
+          node-version: ${{ matrix.node }}
           cache: npm
       - run: npm ci
       - run: npm run check
+      - run: npm run test:e2e
+      - run: node scripts/verify-pack.mjs
+
+  ci-ok:
+    # Aggregate gate: the branch ruleset requires this single check.
+    name: ci-ok
+    needs: check
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify matrix result
+        run: |
+          if [ "${{ needs.check.result }}" != "success" ]; then
+            echo "CI matrix failed: ${{ needs.check.result }}"
+            exit 1
+          fi
