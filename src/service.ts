@@ -1,10 +1,11 @@
 import { Buffer } from "node:buffer";
 
+import { DomainError } from "./errors.js";
 import { permitsSensitivity } from "./registry.js";
 
 import type { AgentRegistry, PolicySnapshot } from "./registry.js";
 import type { HandoffStore } from "./store.js";
-import type { AgentDefinition, CreateHandoffInput, Handoff, HandoffStatus, Sensitivity } from "./types.js";
+import type { AgentDefinition, CreateHandoffInput, Handoff, HandoffStatus } from "./types.js";
 
 export interface ServiceOptions {
   maxMessageBytes: number;
@@ -19,7 +20,7 @@ interface Principal {
 function inaccessible(handoffId: string): Error {
   // One error shape for "does not exist" and "exists but is not accessible",
   // so a revoked or unrelated principal gains no existence oracle.
-  return new Error(`Handoff '${handoffId}' was not found or is not accessible to this identity.`);
+  return new DomainError(`Handoff '${handoffId}' was not found or is not accessible to this identity.`);
 }
 
 export class HandoffService {
@@ -115,19 +116,15 @@ export class HandoffService {
     const serialized = JSON.stringify(input);
     const bytes = Buffer.byteLength(serialized, "utf8");
     if (bytes > this.options.maxMessageBytes) {
-      throw new Error(`Handoff payload is ${bytes} bytes; maximum is ${this.options.maxMessageBytes}.`);
+      throw new DomainError(`Handoff payload is ${bytes} bytes; maximum is ${this.options.maxMessageBytes}.`);
     }
   }
 
   private assertTextSize(value: string, field: string): void {
-    if (Buffer.byteLength(value, "utf8") > 4_096) throw new Error(`${field} exceeds 4096 bytes.`);
+    if (Buffer.byteLength(value, "utf8") > 4_096) throw new DomainError(`${field} exceeds 4096 bytes.`);
   }
 }
 
 export function defaultStatuses(): HandoffStatus[] {
   return ["queued", "accepted", "blocked"];
-}
-
-export function normalizeSensitivity(value: Sensitivity): Sensitivity {
-  return value;
 }

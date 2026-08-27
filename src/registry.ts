@@ -4,6 +4,7 @@ import { readFile, stat } from "node:fs/promises";
 import YAML from "yaml";
 import { z } from "zod";
 
+import { DomainError } from "./errors.js";
 import { sensitivitySchema } from "./types.js";
 
 import type { AgentDefinition, Sensitivity } from "./types.js";
@@ -188,7 +189,7 @@ export class PolicySnapshot {
   public resolveActive(agentId: string, nowSeconds = Math.floor(Date.now() / 1000)): AgentDefinition {
     const agent = this.agents.get(agentId);
     if (!agent || !agent.enabled || (agent.expiresAt !== undefined && agent.expiresAt <= nowSeconds)) {
-      throw new Error(`Agent '${agentId}' is not authorised under the current policy.`);
+      throw new DomainError(`Agent '${agentId}' is not authorised under the current policy.`);
     }
     return agent;
   }
@@ -202,17 +203,17 @@ export class PolicySnapshot {
   }
 
   public assertCanSend(senderId: string, recipientId: string, sensitivity: Sensitivity): void {
-    if (senderId === recipientId) throw new Error("An agent may not hand off work to itself.");
+    if (senderId === recipientId) throw new DomainError("An agent may not hand off work to itself.");
     const sender = this.resolveActive(senderId);
     const recipient = this.resolveActive(recipientId);
     if (!permitsTarget(sender.sendTo, recipientId)) {
-      throw new Error(`Agent '${senderId}' may not send to '${recipientId}'.`);
+      throw new DomainError(`Agent '${senderId}' may not send to '${recipientId}'.`);
     }
     if (!permitsTarget(recipient.receiveFrom, senderId)) {
-      throw new Error(`Agent '${recipientId}' may not receive from '${senderId}'.`);
+      throw new DomainError(`Agent '${recipientId}' may not receive from '${senderId}'.`);
     }
     if (!permitsSensitivity(sender, sensitivity) || !permitsSensitivity(recipient, sensitivity)) {
-      throw new Error(`Sensitivity '${sensitivity}' exceeds an agent disclosure ceiling.`);
+      throw new DomainError(`Sensitivity '${sensitivity}' exceeds an agent disclosure ceiling.`);
     }
   }
 }
