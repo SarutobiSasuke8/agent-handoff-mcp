@@ -1,7 +1,9 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
+
+import { DomainError } from "./errors.js";
 
 import type { CreateHandoffInput, Handoff, HandoffEvent, HandoffStatus } from "./types.js";
 
@@ -24,6 +26,7 @@ interface HandoffRow {
   created_at: string;
   updated_at: string;
   idempotency_key: string | null;
+  payload_hash: string | null;
 }
 
 interface EventRow {
@@ -35,6 +38,45 @@ interface EventRow {
   to_status: HandoffStatus;
   note: string | null;
   created_at: string;
+}
+
+/**
+ * Deterministic fingerprint of every caller-controlled handoff field, so a
+ * reused (sender, idempotency_key) pair can be verified as a true retry of the
+ * same payload rather than silently returning an unrelated original handoff.
+ */
+function payloadHash(input: CreateHandoffInput): string {
+  const canonical = JSON.stringify({
+    recipient: input.recipient,
+    title: input.title,
+    summary: input.summary,
+    request: input.request,
+    contextRefs: input.contextRefs,
+    artifactRefs: input.artifactRefs,
+    tags: input.tags,
+    sensitivity: input.sensitivity,
+    priority: input.priority,
+    parentId: input.parentId ?? null,
+  });
+  return createHash("sha256").update(canonical, "utf8").digest("hex");
+}
+
+function rowPayloadHash(row: HandoffRow): string {
+  // Rows written before the payload_hash column existed carry NULL; recompute
+  // the fingerprint from the stored fields so legacy rows get the same guard.
+  if (row.payload_hash) return row.payload_hash;
+  return payloadHash({
+    recipient: row.recipient,
+    title: row.title,
+    summary: row.summary,
+    request: row.request,
+    contextRefs: parseStringArray(row.context_refs_json),
+    artifactRefs: parseStringArray(row.artifact_refs_json),
+    tags: parseStringArray(row.tags_json),
+    sensitivity: row.sensitivity,
+    priority: row.priority,
+    ...(row.parent_id ? { parentId: row.parent_id } : {}),
+  });
 }
 
 function parseStringArray(value: string): string[] {
@@ -108,6 +150,7 @@ export class HandoffStore {
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
         idempotency_key TEXT,
+        payload_hash TEXT,
         UNIQUE(sender, idempotency_key)
       );
       CREATE INDEX IF NOT EXISTS idx_handoffs_recipient_status ON handoffs(recipient, status, created_at DESC);
@@ -124,9 +167,14 @@ export class HandoffStore {
       );
       CREATE INDEX IF NOT EXISTS idx_events_handoff ON handoff_events(handoff_id, created_at);
     `);
+    const columns = this.db.prepare("SELECT name FROM pragma_table_info('handoffs')").all() as unknown as { name: string }[];
+    if (!columns.some((column) => column.name === "payload_hash")) {
+      this.db.exec("ALTER TABLE handoffs ADD COLUMN payload_hash TEXT");
+    }
   }
 
   public create(sender: string, input: CreateHandoffInput, maxDepth: number): Handoff {
+    const hash = payloadHash(input);
     this.db.exec("BEGIN IMMEDIATE");
     try {
       if (input.idempotencyKey) {
@@ -134,6 +182,12 @@ export class HandoffStore {
           "SELECT * FROM handoffs WHERE sender = ? AND idempotency_key = ?",
         ).get(sender, input.idempotencyKey) as HandoffRow | undefined;
         if (existing) {
+          if (rowPayloadHash(existing) !== hash) {
+            throw new DomainError(
+              `Idempotency key '${input.idempotencyKey}' was already used by '${sender}' with a different payload. ` +
+              "Reuse a key only to retry the identical handoff; use a new key for new content.",
+            );
+          }
           this.db.exec("COMMIT");
           return toHandoff(existing);
         }
@@ -141,7 +195,7 @@ export class HandoffStore {
 
       const parent = input.parentId ? this.get(input.parentId) : undefined;
       const depth = parent ? parent.depth + 1 : 0;
-      if (depth > maxDepth) throw new Error(`Maximum handoff depth of ${maxDepth} exceeded.`);
+      if (depth > maxDepth) throw new DomainError(`Maximum handoff depth of ${maxDepth} exceeded.`);
 
       const id = randomUUID();
       const threadId = parent?.threadId ?? id;
@@ -150,8 +204,8 @@ export class HandoffStore {
         INSERT INTO handoffs (
           id, thread_id, parent_id, depth, sender, recipient, title, summary, request,
           context_refs_json, artifact_refs_json, tags_json, sensitivity, priority, status,
-          created_at, updated_at, idempotency_key
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'queued', ?, ?, ?)
+          created_at, updated_at, idempotency_key, payload_hash
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'queued', ?, ?, ?, ?)
       `).run(
         id,
         threadId,
@@ -170,6 +224,7 @@ export class HandoffStore {
         now,
         now,
         input.idempotencyKey ?? null,
+        hash,
       );
       this.insertEvent(id, sender, "created", undefined, "queued", undefined, now);
       const created = this.get(id);
@@ -183,7 +238,7 @@ export class HandoffStore {
 
   public get(id: string): Handoff {
     const handoff = this.find(id);
-    if (!handoff) throw new Error(`Handoff '${id}' was not found.`);
+    if (!handoff) throw new DomainError(`Handoff '${id}' was not found.`);
     return handoff;
   }
 
@@ -218,7 +273,7 @@ export class HandoffStore {
       const current = this.get(handoffId);
       const allowed = this.allowedTransition(current, actor, toStatus);
       if (!allowed) {
-        throw new Error(`Agent '${actor}' may not move '${current.status}' to '${toStatus}'.`);
+        throw new DomainError(`Agent '${actor}' may not move '${current.status}' to '${toStatus}'.`);
       }
       const now = new Date().toISOString();
       this.db.prepare("UPDATE handoffs SET status = ?, updated_at = ? WHERE id = ?").run(toStatus, now, handoffId);

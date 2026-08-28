@@ -15,7 +15,7 @@
 - [ ] Postgres store adapter for multi-host deployments
 - [ ] optional inbox notifications without content leakage
 - [ ] schema migrations and backup/restore commands
-- [ ] token provisioning and revocation CLI
+- [x] token provisioning and revocation CLI
 - [ ] OpenTelemetry-compatible operational metrics
 
 ## Optional modules, not core-tool expansion

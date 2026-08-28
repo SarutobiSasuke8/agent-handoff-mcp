@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 
+import { DomainError } from "./errors.js";
 import { defaultStatuses } from "./service.js";
 import { handoffStatusSchema, prioritySchema, sensitivitySchema } from "./types.js";
 
@@ -19,13 +20,19 @@ function jsonResult(value: Record<string, unknown>): CallToolResult {
 }
 
 function errorResult(error: unknown): CallToolResult {
-  const message = error instanceof Error ? error.message : "Unknown error";
-  return { isError: true, content: [{ type: "text", text: message }] };
+  // Only deliberate domain/policy errors may echo their message to MCP
+  // clients; unexpected internal failures are logged and replaced with a
+  // generic message so internals (paths, driver errors) cannot leak.
+  if (error instanceof DomainError) {
+    return { isError: true, content: [{ type: "text", text: error.message }] };
+  }
+  process.stderr.write(`Unexpected tool error: ${error instanceof Error ? error.stack ?? error.message : String(error)}\n`);
+  return { isError: true, content: [{ type: "text", text: "An internal error occurred while processing this request." }] };
 }
 
 function resolveAgentId(context: ToolContext, fixedAgentId?: string): string {
   const agentId = fixedAgentId ?? context.http?.authInfo?.clientId;
-  if (!agentId) throw new Error("Authenticated agent identity is missing.");
+  if (!agentId) throw new DomainError("Authenticated agent identity is missing.");
   return agentId;
 }
 

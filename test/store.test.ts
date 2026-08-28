@@ -34,6 +34,29 @@ void test("store creates idempotent handoffs and records lifecycle events", () =
   }
 });
 
+void test("store rejects a reused idempotency key with a different payload", () => {
+  const store = new HandoffStore(":memory:");
+  try {
+    const first = store.create("claude", input, 8);
+    assert.throws(
+      () => store.create("claude", { ...input, title: "A different title" }, 8),
+      /already used by 'claude' with a different payload/u,
+    );
+    assert.throws(
+      () => store.create("claude", { ...input, recipient: "nezu" }, 8),
+      /already used by 'claude' with a different payload/u,
+    );
+    // The identical payload still replays idempotently after a rejected mismatch.
+    assert.equal(store.create("claude", input, 8).id, first.id);
+    assert.equal(store.inbox("codex", ["queued"], 20).length, 1);
+    // A different sender may reuse the same key without conflict.
+    const other = store.create("codex", { ...input, recipient: "claude" }, 8);
+    assert.notEqual(other.id, first.id);
+  } finally {
+    store.close();
+  }
+});
+
 void test("store enforces actor-specific state transitions", () => {
   const store = new HandoffStore(":memory:");
   try {
