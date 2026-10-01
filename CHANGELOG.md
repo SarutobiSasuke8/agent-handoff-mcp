@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Release hardening, 2026-10-01
+
+- Use Node 24 for npm trusted publishing and reject manual releases from branch refs.
+- Refresh locked dependencies to clear the current npm audit findings without changing declared dependency ranges.
+- Record 33 unit and 7 end-to-end checks, including clean tarball installation, transport revocation parity and restart persistence.
+
 `0.1.0` is the first release candidate. It has not been published to npm and
 no Git tag or GitHub release exists yet; everything below describes the
 candidate on `main`.
