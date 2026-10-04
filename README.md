@@ -126,6 +126,7 @@ Use HTTP when multiple clients should connect to one long-running service. Use s
 - [Security model](SECURITY.md)
 - [Registry JSON Schema](schema/agent-registry.schema.v1.json)
 - [Roadmap](ROADMAP.md)
+- [Release validation, 2026-10-01](docs/RELEASE_EVIDENCE_2026-10-01.md)
 - [Changelog](CHANGELOG.md)
 
 ## Scope boundary

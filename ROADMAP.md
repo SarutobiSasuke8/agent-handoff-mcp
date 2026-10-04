@@ -1,5 +1,14 @@
 # Roadmap
 
+## Release evidence sweep, 2026-10-01
+
+- [x] Re-run unit checks and packed HTTP/stdio conformance on the remediated candidate: 33 unit and 7 end-to-end tests pass on Windows/Node 22.
+- [x] Require a version tag for manual publication and use a trusted-publishing-capable npm release toolchain.
+- [ ] Complete trusted-publisher administration and the first hosted tag release.
+- [ ] Cold-install the published artifact and capture actual client workflow evidence.
+
+See [the validation record](docs/RELEASE_EVIDENCE_2026-10-01.md) for scope and limits.
+
 ## v0.1 — protocol core
 
 - [x] HTTP and stdio MCP transports
