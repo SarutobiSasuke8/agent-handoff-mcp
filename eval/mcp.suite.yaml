@@ -1,0 +1,73 @@
+version: 1
+name: agent-handoff-mcp
+timeout_ms: 30000
+target:
+  transport: stdio
+  command: ["node", "../scripts/eval-target.mjs"]
+contracts:
+  - name: exact_tool_list
+    expect_tools: [handoff_whoami, handoff_send, handoff_inbox, handoff_get, handoff_acknowledge, handoff_update_status]
+    exact: true
+
+  - name: input_schemas
+    input_schema:
+      handoff_whoami: fixtures/handoff_whoami.input.schema.json
+      handoff_send: fixtures/handoff_send.input.schema.json
+      handoff_inbox: fixtures/handoff_inbox.input.schema.json
+      handoff_get: fixtures/handoff_get.input.schema.json
+      handoff_acknowledge: fixtures/handoff_acknowledge.input.schema.json
+      handoff_update_status: fixtures/handoff_update_status.input.schema.json
+
+  - name: whoami_golden
+    tool: handoff_whoami
+    input: {}
+    assert:
+      golden:
+        path: fixtures/handoff_whoami.golden.json
+        only_paths: [agent_id, display_name, disclosure_ceiling, send_to, receive_from]
+
+  - name: send_handoff_golden
+    tool: handoff_send
+    input:
+      recipient: eval-beta
+      title: Contract fixture
+      summary: Deterministic contract handoff.
+      request: Verify the contract suite.
+      context_refs: []
+      artifact_refs: []
+      tags: [contract]
+      sensitivity: internal
+      priority: normal
+    assert:
+      result_schema: fixtures/handoff_send.result.schema.json
+      golden:
+        path: fixtures/handoff_send.golden.json
+        only_paths: [handoff.sender, handoff.recipient, handoff.title, handoff.summary, handoff.request, handoff.contextRefs, handoff.artifactRefs, handoff.tags, handoff.sensitivity, handoff.priority, handoff.status]
+
+  - name: deny_unauthorised_recipient
+    tool: handoff_send
+    input:
+      recipient: eval-outsider
+      title: Denied
+      summary: This must be rejected.
+      request: No delivery.
+    assert:
+      is_error: true
+      error_message: "not authorised under the current policy"
+
+  - name: deny_illegal_status_transition
+    tool: handoff_update_status
+    input:
+      handoff_id: 00000000-0000-0000-0000-000000000000
+      status: completed
+    assert:
+      is_error: true
+      error_message: "may not move 'queued' to 'completed'"
+
+  - name: deny_invalid_handoff_id
+    tool: handoff_get
+    input:
+      handoff_id: not-a-uuid
+    assert:
+      is_error: true
+      error_message: "Invalid arguments for tool handoff_get"

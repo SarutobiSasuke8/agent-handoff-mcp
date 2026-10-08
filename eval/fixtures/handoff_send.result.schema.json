@@ -1,0 +1,30 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["handoff"],
+  "properties": {
+    "handoff": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "threadId", "depth", "sender", "recipient", "title", "summary", "request", "contextRefs", "artifactRefs", "tags", "sensitivity", "priority", "status", "createdAt", "updatedAt"],
+      "properties": {
+        "id": {"type": "string"},
+        "threadId": {"type": "string"},
+        "depth": {"type": "integer", "minimum": 0},
+        "sender": {"type": "string"},
+        "recipient": {"type": "string"},
+        "title": {"type": "string"},
+        "summary": {"type": "string"},
+        "request": {"type": "string"},
+        "contextRefs": {"type": "array", "items": {"type": "string"}},
+        "artifactRefs": {"type": "array", "items": {"type": "string"}},
+        "tags": {"type": "array", "items": {"type": "string"}},
+        "sensitivity": {"enum": ["public-safe", "internal", "restricted"]},
+        "priority": {"enum": ["low", "normal", "high", "urgent"]},
+        "status": {"enum": ["queued", "accepted", "blocked", "completed", "cancelled"]},
+        "createdAt": {"type": "string"},
+        "updatedAt": {"type": "string"}
+      }
+    }
+  }
+}

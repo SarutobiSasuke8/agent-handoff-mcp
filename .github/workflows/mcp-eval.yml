@@ -1,0 +1,30 @@
+name: mcp-eval
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - uses: SarutobiSasuke8/mcp-eval-harness@077c74a4a65068e4d6f3f788a9d10ab9d39edc9c
+        with:
+          suite: eval/mcp.suite.yaml
+          node-version: ""
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: mcp-eval-report
+          path: mcp-eval-report.json
+          if-no-files-found: ignore

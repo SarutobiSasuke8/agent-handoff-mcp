@@ -1,0 +1,17 @@
+{
+  "handoff": {
+    "artifactRefs": [],
+    "contextRefs": [],
+    "priority": "normal",
+    "recipient": "eval-beta",
+    "request": "Verify the contract suite.",
+    "sender": "eval-alpha",
+    "sensitivity": "internal",
+    "status": "queued",
+    "summary": "Deterministic contract handoff.",
+    "tags": [
+      "contract"
+    ],
+    "title": "Contract fixture"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "agent_id": "eval-alpha",
+  "disclosure_ceiling": "internal",
+  "display_name": "Evaluation Alpha",
+  "receive_from": [
+    "eval-beta"
+  ],
+  "send_to": [
+    "eval-beta"
+  ]
+}
