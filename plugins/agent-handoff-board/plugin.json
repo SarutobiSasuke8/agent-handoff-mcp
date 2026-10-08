@@ -1,0 +1,13 @@
+{
+  "schema_version": "v1",
+  "name": "agent-handoff-board",
+  "display_name": "Agent Handoff Board",
+  "version": "0.1.0",
+  "description": "Governed AgentOps handoffs between ChatGPT, Codex and human operators.",
+  "transport": "streamable-http",
+  "endpoint": "https://handoff.astraeus.ie/mcp",
+  "authentication": { "type": "bearer", "provisioning": "operator-issued" },
+  "tools": ["handoff_send", "handoff_acknowledge", "handoff_inbox", "handoff_get", "handoff_update_status"],
+  "implementation_link": "https://astraeus.ie/",
+  "notes": "The endpoint is a placeholder until the owner provisions DNS and TLS."
+}

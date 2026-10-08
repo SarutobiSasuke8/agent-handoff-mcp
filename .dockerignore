@@ -1,0 +1,9 @@
+node_modules
+.git
+release-evidence
+.demo*
+deploy/board/certs
+*.sqlite
+*.backup
+*.env
+!deploy/board/.env.example
