@@ -136,3 +136,8 @@ This project is a coordination primitive, not a general task platform. Shared ta
 ## License
 
 Apache-2.0. See [LICENSE](LICENSE).
+# Recovery and local release evidence
+
+Use `agent-handoff-mcp backup <out-file>` for a live WAL snapshot with the validated registry, and `restore <file>` into fresh files after stopping servers. Existing destinations require `--force`; live servers, corrupt backups and incomplete restores remain blocked. See [Recovery](docs/RECOVERY.md) for commands, policy reconciliation and the limits of local process guards.
+
+`npm run release:dry-run` produces local checks, e2e recovery proof, allowlist verification, SPDX SBOM, tarball and SHA-256 evidence under gitignored `release-evidence/`. Package publication remains an owner action.

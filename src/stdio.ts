@@ -9,10 +9,12 @@ const config = loadConfig();
 if (!config.stdioAgentId) throw new Error("HANDOFF_AGENT_ID is required for stdio transport.");
 
 const { registry, store, service } = createRuntime(config);
-await registry.get(config.stdioAgentId);
+try { await registry.get(config.stdioAgentId); }
+catch (error) { store.close(); throw error; }
 const mcpServer = createHandoffMcpServer(service, config.stdioAgentId);
 const transport = new StdioServerTransport(process.stdin, process.stdout, { maxBufferSize: config.maxMessageBytes + 65_536 });
-await mcpServer.connect(transport);
+try { await mcpServer.connect(transport); }
+catch (error) { store.close(); throw error; }
 
 async function shutdown(): Promise<void> {
   await mcpServer.close();
