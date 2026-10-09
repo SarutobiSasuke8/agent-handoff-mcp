@@ -67,6 +67,7 @@
     "lint": "eslint .",
     "test": "npm run build && node --test \"dist/test/*.test.js\"",
     "test:e2e": "npm run build && node --test --test-concurrency=1 \"dist/test/e2e/*.test.js\"",
+    "eval:contract": "npm run build && mcp-eval eval/mcp.suite.yaml",
     "schema:write": "npm run build && node scripts/write-schema.mjs",
     "release:dry-run": "node scripts/release-dry-run.mjs",
     "check": "npm run typecheck && npm run lint && npm test",
@@ -86,6 +87,7 @@
   "devDependencies": {
     "@eslint/js": "9.39.2",
     "@modelcontextprotocol/client": "^2.0.0",
+    "@sarutobi-sasuke/mcp-eval-harness": "github:SarutobiSasuke8/mcp-eval-harness#077c74a60ccd6d9061e35f882ffd3db5f5d17052",
     "@types/express": "5.0.6",
     "@types/node": "22.19.15",
     "eslint": "10.8.1",

@@ -1,0 +1,18 @@
+{
+  "handoff": {
+    "artifactRefs": [],
+    "contextRefs": [],
+    "depth": 0,
+    "priority": "normal",
+    "recipient": "eval-beta",
+    "request": "Write three sentences on what the suite covers.",
+    "sender": "eval-alpha",
+    "sensitivity": "internal",
+    "status": "queued",
+    "summary": "The mcp-eval suite needs a short summary for the README.",
+    "tags": [
+      "docs"
+    ],
+    "title": "Summarise the contract suite"
+  }
+}
