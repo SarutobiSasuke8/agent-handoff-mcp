@@ -41,7 +41,7 @@ export function assertNoServers(file: string): void {
     try { process.kill(pid, 0); }
     catch (error) {
       if ((error as NodeJS.ErrnoException).code === "ESRCH") continue;
-      throw new Error("Cannot establish whether a server is running; restore refused.");
+      throw new Error("Cannot establish whether a server is running; restore refused.", { cause: error });
     }
     throw new Error("A server is still running; stop all HTTP and stdio servers before restore, even with --force.");
   }
