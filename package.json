@@ -68,6 +68,7 @@
     "test": "npm run build && node --test \"dist/test/*.test.js\"",
     "test:e2e": "npm run build && node --test --test-concurrency=1 \"dist/test/e2e/*.test.js\"",
     "schema:write": "npm run build && node scripts/write-schema.mjs",
+    "release:dry-run": "node scripts/release-dry-run.mjs",
     "check": "npm run typecheck && npm run lint && npm test",
     "prepublishOnly": "npm run check && npm run test:e2e && node scripts/verify-pack.mjs",
     "prepare": "npm run build"

@@ -10,7 +10,7 @@ export function createRuntime(config: AppConfig): {
   service: HandoffService;
 } {
   const registry = new AgentRegistry(config.registryFile);
-  const store = new HandoffStore(config.databaseFile);
+  const store = new HandoffStore(config.databaseFile, config.registryFile);
   const service = new HandoffService(registry, store, {
     maxMessageBytes: config.maxMessageBytes,
     maxHandoffDepth: config.maxHandoffDepth,

@@ -4,6 +4,7 @@ import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 
 import { DomainError } from "./errors.js";
+import { registerServer } from "./recovery-lock.js";
 
 import type { CreateHandoffInput, Handoff, HandoffEvent, HandoffStatus } from "./types.js";
 
@@ -125,12 +126,17 @@ function toEvent(row: EventRow): HandoffEvent {
 
 export class HandoffStore {
   private readonly db: DatabaseSync;
+  private readonly releaseServer: () => void;
+  private closed = false;
 
-  public constructor(databaseFile: string) {
+  public constructor(databaseFile: string, registryFile?: string) {
     if (databaseFile !== ":memory:") mkdirSync(path.dirname(databaseFile), { recursive: true });
-    this.db = new DatabaseSync(databaseFile);
-    this.db.exec("PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;");
-    this.db.exec(`
+    this.releaseServer = registryFile ? registerServer(databaseFile, registryFile) : () => undefined;
+    let opened: DatabaseSync | undefined;
+    try {
+      this.db = opened = new DatabaseSync(databaseFile);
+      this.db.exec("PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;");
+      this.db.exec(`
       CREATE TABLE IF NOT EXISTS handoffs (
         id TEXT PRIMARY KEY,
         thread_id TEXT NOT NULL,
@@ -166,10 +172,14 @@ export class HandoffStore {
         created_at TEXT NOT NULL
       );
       CREATE INDEX IF NOT EXISTS idx_events_handoff ON handoff_events(handoff_id, created_at);
-    `);
-    const columns = this.db.prepare("SELECT name FROM pragma_table_info('handoffs')").all() as unknown as { name: string }[];
-    if (!columns.some((column) => column.name === "payload_hash")) {
-      this.db.exec("ALTER TABLE handoffs ADD COLUMN payload_hash TEXT");
+      `);
+      const columns = this.db.prepare("SELECT name FROM pragma_table_info('handoffs')").all() as unknown as { name: string }[];
+      if (!columns.some((column) => column.name === "payload_hash")) {
+        this.db.exec("ALTER TABLE handoffs ADD COLUMN payload_hash TEXT");
+      }
+    } catch (error) {
+      try { opened?.close(); } finally { this.releaseServer(); }
+      throw error;
     }
   }
 
@@ -288,7 +298,10 @@ export class HandoffStore {
   }
 
   public close(): void {
+    if (this.closed) return;
     this.db.close();
+    this.closed = true;
+    this.releaseServer();
   }
 
   private allowedTransition(handoff: Handoff, actor: string, next: Exclude<HandoffStatus, "queued">): boolean {
