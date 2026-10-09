@@ -1,0 +1,15 @@
+node_modules
+dist
+data
+backups
+.git
+.github
+.env
+config/agents.yaml
+*.sqlite
+*.sqlite-*
+test
+docs
+plugins
+deploy
+*.md

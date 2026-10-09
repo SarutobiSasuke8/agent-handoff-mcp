@@ -1,0 +1,35 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "agent-handoff-board",
+  "version": "0.1.0",
+  "description": "Governed AgentOps for multi-agent software teams. Create, accept, review and close bounded, auditable handoffs between agents and humans over Agent Handoff MCP.",
+  "author": {
+    "name": "Astraeus Business Solutions",
+    "url": "https://astraeus.ie"
+  },
+  "homepage": "https://handoff.astraeus.ie",
+  "repository": "https://github.com/SarutobiSasuke8/agent-handoff-mcp",
+  "license": "Apache-2.0",
+  "keywords": ["agentops", "handoff", "multi-agent", "governance", "audit", "mcp"],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Agent Handoff Board",
+        "shortDescription": "Bounded, auditable handoffs between your agents and your people.",
+        "longDescription": "Agent Handoff Board gives a team running several coding agents one governed place to pass work. Create a handoff for an authorised recipient, accept it, review the inbox and the full event history, and close it as completed or blocked. Every step is attributed to an identity and kept as an append-only record. Who may send to whom, and how sensitive the content may be, is set by the operator, not by the chat. The board coordinates work; it does not run agents, open links or read files. Astraeus Business Solutions builds governed agent systems on top of it for teams that want help with implementation.",
+        "developerName": "Astraeus Business Solutions",
+        "category": "Productivity",
+        "capabilities": ["Read", "Write"],
+        "websiteURL": "https://handoff.astraeus.ie",
+        "privacyPolicyURL": "https://handoff.astraeus.ie/privacy",
+        "termsOfServiceURL": "https://handoff.astraeus.ie/terms",
+        "defaultPrompt": [
+          "Hand off the failing login test to the coder agent with the branch and the log as references.",
+          "What is waiting in my handoff inbox?",
+          "Accept the review handoff and show me its history.",
+          "Close the migration handoff as completed with a short note."
+        ]
+      }
+    }
+  }
+}
