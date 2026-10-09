@@ -19,6 +19,8 @@ Teams that want help designing and running governed agent systems on top of it c
 | Privacy policy draft | [privacy.md](privacy.md) |
 | Terms draft | [terms.md](terms.md) |
 
+The shared edge (`vps-edge`) renders `privacy.md` and `terms.md` as they stand at its pinned commit, so every line in them appears on the public page. Keep internal notes out of both files, leave each `[PLACEHOLDER]` for the operator to fill, and re-check both pages whenever the software or the edge changes what is logged or allowed.
+
 ## Verb mapping
 
 The plugin adds no tools and changes no protocol. Its four skills map the board's verbs onto the six existing MCP tools.
