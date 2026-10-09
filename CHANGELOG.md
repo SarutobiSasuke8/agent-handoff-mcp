@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add the Agent Handoff Board ChatGPT and Codex plugin package in `plugins/agent-handoff-board/` with four skills (create, accept, review, close) over the existing six tools, and `npm run check:plugin`. No tool or protocol changes.
 - Add a single-tenant hosted demo recipe: `Dockerfile`, `deploy/board/compose.yaml` with a Traefik TLS proxy and per-IP rate limit, a demo seed script, an interim backup script and a test-case runner.
 - Add review material in `docs/board/`: README, hosting recipe, privacy and terms drafts, demo workspace, 5 positive and 3 negative test cases, walkthrough.
+- Make the Board privacy and terms pages match the shared `vps-edge` deployment (#36): state that the Caddy access log records client IP addresses, for how long and why; describe the read-only, no sign-in demo instead of sending content or holding a token; remove the internal "Status: draft" lines and "draft" titles. Legal placeholders are unchanged.
 
 ### Release hardening, 2026-10-01
 

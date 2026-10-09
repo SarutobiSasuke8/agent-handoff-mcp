@@ -80,7 +80,7 @@ Until then, to restore: stop the stack, copy a snapshot pair into a fresh `hando
 ## Hardening notes
 
 - Traefik reads container labels through the Docker socket, mounted read-only. On a stricter host, front it with a socket proxy or move the routing into Traefik's file provider.
-- Traefik access logs are off because they record client IP addresses. If you turn them on, update the privacy policy's retention section.
+- Traefik access logs are off in this recipe because they record client IP addresses. The public demo at `handoff.astraeus.ie` is served by the shared Caddy edge in `vps-edge` instead, which does keep an access log with client IP addresses, and [privacy.md](privacy.md) describes that edge. If you run this recipe for a public instance, or turn its access logs on, check the privacy policy's Logs line against what your proxy really records.
 - The handoff server is not published on a host port. Keep it that way: TLS, rate limiting and the body cap all live at the proxy.
 - Back up the `letsencrypt` volume as well, or certificates will be re-issued on a fresh host.
 

@@ -1,19 +1,19 @@
-# Terms of use (draft for Agent Handoff Board)
-
-Status: draft text for publication at the manifest's terms URL. Replace every `[PLACEHOLDER]` and have it reviewed before submission.
+# Terms of use for Agent Handoff Board
 
 Effective date: [PLACEHOLDER]
 Operator: [PLACEHOLDER legal name and contact address]
 
 ## The service
 
-Agent Handoff Board lets an AI assistant create, accept, review and close handoffs in a workspace run by the operator. It coordinates work between identities. It does not do the work, run agents, open references or guarantee that any handoff is acted on.
+Agent Handoff Board coordinates work between identities in a workspace through handoffs that are created, accepted, reviewed and closed. It does not do the work, run agents, open references or guarantee that any handoff is acted on.
+
+The public demo at this address is read-only. Through an AI assistant you can look up the demo identity, list its inbox and read its synthetic example handoffs. You cannot send, accept, change or close handoffs on the demo.
 
 The hosted demo is provided free of charge, as is, for evaluation. It may be reset, rate limited, changed or withdrawn at any time. There is no service level.
 
-## Your account and tokens
+## Access
 
-Access uses a bearer token issued by the operator for one workspace identity. Keep it secret. Anyone holding it can act as that identity until it expires or is revoked. Tell [PLACEHOLDER email] at once if a token may be exposed.
+The demo has no accounts, no sign-in and no visitor tokens. Every visitor reads it as one synthetic viewer identity, whose token is added on the server and never shown to you. Report any problem with the demo to [PLACEHOLDER email].
 
 ## Acceptable use
 
@@ -24,11 +24,11 @@ You must not:
 - try to get round authorisation, disclosure ceilings, rate limits or other controls, or probe the service for weaknesses without written permission (see `SECURITY.md` for reporting);
 - send automated traffic beyond normal assistant use.
 
-The operator may suspend identities that break these terms.
+The operator may block requests from IP addresses that break these terms.
 
 ## Content
 
-You keep any rights in the content you put in handoffs. You give the operator permission to store and display it to the handoff's sender and recipient to run the service. Handoff history is append-only by design and is not deleted through the tools; see the privacy policy for erasure requests.
+The demo's handoffs are synthetic examples written by the operator and recreated at each reset. Visitors cannot put content in handoffs on the demo. Handoff history is append-only by design and is not deleted through the tools; see the privacy policy for what the demo records about visitors and how to make a request about it.
 
 ## Open source
 
