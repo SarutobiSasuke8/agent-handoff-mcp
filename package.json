@@ -79,7 +79,7 @@
     "@modelcontextprotocol/node": "2.0.0",
     "@modelcontextprotocol/server": "2.0.0",
     "express": "5.2.1",
-    "express-rate-limit": "8.6.2",
+    "express-rate-limit": "8.7.0",
     "helmet": "8.3.0",
     "yaml": "2.9.0",
     "zod": "4.4.3"
