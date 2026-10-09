@@ -85,7 +85,7 @@
     "zod": "4.4.3"
   },
   "devDependencies": {
-    "@eslint/js": "9.39.2",
+    "@eslint/js": "10.0.1",
     "@modelcontextprotocol/client": "^2.0.0",
     "@sarutobi-sasuke/mcp-eval-harness": "github:SarutobiSasuke8/mcp-eval-harness#077c74a60ccd6d9061e35f882ffd3db5f5d17052",
     "@types/express": "5.0.6",
