@@ -89,7 +89,7 @@
     "@modelcontextprotocol/client": "^2.0.0",
     "@sarutobi-sasuke/mcp-eval-harness": "github:SarutobiSasuke8/mcp-eval-harness#077c74a60ccd6d9061e35f882ffd3db5f5d17052",
     "@types/express": "5.0.6",
-    "@types/node": "22.19.15",
+    "@types/node": "26.6.4",
     "eslint": "10.8.1",
     "tsx": "4.23.15",
     "typescript": "5.9.3",
