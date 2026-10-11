@@ -1,0 +1,46 @@
+{
+  "handoffs": [
+    {
+      "artifactRefs": [],
+      "contextRefs": [],
+      "createdAt": "2026-01-01T10:00:00.000Z",
+      "depth": 0,
+      "id": "00000000-0000-4000-8000-000000000002",
+      "priority": "high",
+      "recipient": "eval-alpha",
+      "request": "Acknowledge and decide whether it needs a fix this week.",
+      "sender": "eval-beta",
+      "sensitivity": "internal",
+      "status": "queued",
+      "summary": "A synthetic bug report is waiting for triage.",
+      "tags": [
+        "triage"
+      ],
+      "threadId": "00000000-0000-4000-8000-000000000002",
+      "title": "Triage the open bug report",
+      "updatedAt": "2026-01-01T10:00:00.000Z"
+    },
+    {
+      "artifactRefs": [],
+      "contextRefs": [
+        "docs/release-notes-draft.md"
+      ],
+      "createdAt": "2026-01-01T09:00:00.000Z",
+      "depth": 0,
+      "id": "00000000-0000-4000-8000-000000000001",
+      "priority": "normal",
+      "recipient": "eval-alpha",
+      "request": "Check the draft for accuracy and reply with corrections.",
+      "sender": "eval-beta",
+      "sensitivity": "internal",
+      "status": "queued",
+      "summary": "Draft release notes for version 0.1.0 are ready.",
+      "tags": [
+        "release"
+      ],
+      "threadId": "00000000-0000-4000-8000-000000000001",
+      "title": "Review the release notes",
+      "updatedAt": "2026-01-01T09:00:00.000Z"
+    }
+  ]
+}

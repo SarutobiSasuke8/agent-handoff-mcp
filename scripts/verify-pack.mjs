@@ -20,6 +20,7 @@ const required = [
   "docs/ARCHITECTURE.md",
   "docs/PROTOCOL.md",
   "docs/QUICKSTART.md",
+  "docs/RECOVERY.md",
   ".env.example",
   "README.md",
   "CHANGELOG.md",
@@ -35,6 +36,9 @@ const forbiddenPatterns = [
   /\.sqlite/u,
   /^test\//u,
   /^dist\/test\//u,
+  /^release-evidence\//u,
+  /\.handoff-(?:servers|guard|restore-pending)/u,
+  /\.(?:pre-restore|restore)$/u,
 ];
 
 const missing = required.filter((file) => !files.includes(file));

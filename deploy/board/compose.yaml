@@ -1,0 +1,87 @@
+# Agent Handoff Board: single-tenant hosted demo recipe.
+#
+# Traefik terminates TLS (Let's Encrypt, TLS-ALPN challenge), applies a per-IP rate limit
+# and forwards only /mcp, /healthz and /readyz to the handoff server. Handoffs and the
+# registry live on one named volume; backups go to a second volume.
+#
+# Nothing here is deployed. DNS for HANDOFF_PUBLIC_HOST and the host are the operator's.
+# Full walkthrough: docs/board/hosting.md
+#
+#   cp deploy/board/.env.example deploy/board/.env   # then edit
+#   docker compose -f deploy/board/compose.yaml build
+#   docker compose -f deploy/board/compose.yaml run --rm --no-deps handoff node scripts/board-demo-seed.mjs
+#   docker compose -f deploy/board/compose.yaml up -d
+#   docker compose -f deploy/board/compose.yaml --profile backup run --rm backup
+
+name: agent-handoff-board
+
+services:
+  proxy:
+    image: traefik:v3.3
+    restart: unless-stopped
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --entrypoints.websecure.address=:443
+      - --certificatesresolvers.le.acme.tlschallenge=true
+      - --certificatesresolvers.le.acme.email=${ACME_EMAIL:?set ACME_EMAIL in deploy/board/.env}
+      - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
+      # Access logs are off: they would record client IP addresses. See docs/board/privacy.md.
+      - --accesslog=false
+      - --api.dashboard=false
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # Read-only Docker socket so Traefik can read the labels below. For a stricter host,
+      # put a socket proxy in front of it or switch to Traefik's file provider.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - letsencrypt:/letsencrypt
+
+  handoff:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    image: agent-handoff-mcp:board
+    restart: unless-stopped
+    environment:
+      HANDOFF_MCP_ALLOWED_HOSTS: ${HANDOFF_PUBLIC_HOST:?set HANDOFF_PUBLIC_HOST in deploy/board/.env},localhost,127.0.0.1
+      # One proxy hop (Traefik), so the in-app limiter keys on the real client address.
+      HANDOFF_MCP_TRUST_PROXY_HOPS: "1"
+      HANDOFF_MCP_RATE_LIMIT: ${HANDOFF_MCP_RATE_LIMIT:-120}
+      HANDOFF_MCP_RATE_WINDOW_MS: ${HANDOFF_MCP_RATE_WINDOW_MS:-60000}
+      HANDOFF_MCP_MAX_MESSAGE_BYTES: ${HANDOFF_MCP_MAX_MESSAGE_BYTES:-32768}
+    volumes:
+      - handoff-state:/var/lib/agent-handoff
+    # No published ports: only Traefik reaches the server, on the internal network.
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.handoff.rule: Host(`${HANDOFF_PUBLIC_HOST}`) && (Path(`/mcp`) || Path(`/healthz`) || Path(`/readyz`))
+      traefik.http.routers.handoff.entrypoints: websecure
+      traefik.http.routers.handoff.tls.certresolver: le
+      traefik.http.routers.handoff.middlewares: handoff-ratelimit,handoff-body-limit
+      # Per-IP rate limit at the edge: average requests per period, with a small burst.
+      traefik.http.middlewares.handoff-ratelimit.ratelimit.average: ${PROXY_RATE_AVERAGE:-60}
+      traefik.http.middlewares.handoff-ratelimit.ratelimit.period: 1m
+      traefik.http.middlewares.handoff-ratelimit.ratelimit.burst: ${PROXY_RATE_BURST:-20}
+      traefik.http.middlewares.handoff-ratelimit.ratelimit.sourcecriterion.ipstrategy.depth: "0"
+      traefik.http.middlewares.handoff-body-limit.buffering.maxRequestBodyBytes: "131072"
+      traefik.http.services.handoff.loadbalancer.server.port: "3220"
+
+  backup:
+    profiles: ["backup"]
+    image: agent-handoff-mcp:board
+    entrypoint: ["node", "scripts/board-backup.mjs", "--out-dir", "/var/backups/agent-handoff"]
+    environment:
+      HANDOFF_BACKUP_KEEP: ${HANDOFF_BACKUP_KEEP:-14}
+    volumes:
+      - handoff-state:/var/lib/agent-handoff
+      - handoff-backups:/var/backups/agent-handoff
+
+volumes:
+  handoff-state:
+  handoff-backups:
+  letsencrypt:

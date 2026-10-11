@@ -25,14 +25,16 @@ export interface HttpApp {
 
 export async function buildHttpApp(config: AppConfig): Promise<HttpApp> {
   const { registry, store, service } = createRuntime(config);
-  await registry.current();
+  try { await registry.current(); }
+  catch (error) { store.close(); throw error; }
 
   const mcpServer = createHandoffMcpServer(service);
   const transport = new NodeStreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
     enableJsonResponse: true,
   });
-  await mcpServer.connect(transport);
+  try { await mcpServer.connect(transport); }
+  catch (error) { store.close(); throw error; }
 
   const app = createMcpExpressApp({
     host: config.host,

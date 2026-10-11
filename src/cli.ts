@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 import { parseArgs } from "node:util";
 
+import { loadConfig } from "./config.js";
 import { disableAgent, enableAgent, initRegistry, issueToken, newToken, revokeToken } from "./provision.js";
+import { backup, restore } from "./recovery.js";
 import { validateMain } from "./validate.js";
 
 const USAGE = `Usage: agent-handoff-mcp <command> [options]
@@ -20,6 +22,12 @@ Registry commands:
   disable  --registry <path> --agent <id>   Disable an identity across all transports.
   enable   --registry <path> --agent <id>   Re-enable an identity.
   revoke   --registry <path> --agent <id>   Remove an identity's token binding entirely.
+
+Recovery commands (operator CLI only, never MCP tools):
+  backup <out-file> [--db <path>] [--registry <path>]
+                                       Snapshot the live database and validated registry.
+  restore <file> [--db <path>] [--registry <path>] [--force]
+                                       Restore both files; every server must be stopped.
 
 Token command:
   token                                Generate a token and SHA-256 digest without touching a registry.
@@ -52,6 +60,19 @@ function registryOptions(argv: string[]): { registry: string; agent?: string; ex
 async function main(argv: string[]): Promise<number> {
   const [command, ...rest] = argv;
   switch (command) {
+    case "backup":
+    case "restore": {
+      const { values, positionals } = parseArgs({ args: rest, allowPositionals: true, strict: true,
+        options: { db: { type: "string" }, registry: { type: "string" }, force: { type: "boolean" } } });
+      if (positionals.length !== 1 || (command === "backup" && values.force)) throw new Error("Supply one recovery file; --force is only for restore.");
+      const config = loadConfig();
+      const database = values.db ?? config.databaseFile;
+      const registry = values.registry ?? config.registryFile;
+      if (command === "backup") backup(database, registry, positionals[0]!);
+      else restore(positionals[0]!, database, registry, values.force ?? false);
+      process.stdout.write(command === "backup" ? "Backup validated and written.\n" : "Database and registry restored.\n");
+      return 0;
+    }
     case "http":
       await import("./http.js");
       return 0;

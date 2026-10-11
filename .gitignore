@@ -5,3 +5,13 @@ data/
 config/agents.yaml
 *.log
 coverage/
+release-evidence/
+*.handoff-guard/
+*.handoff-servers/
+*.handoff-restore-pending
+*.pre-restore
+*.restore
+backups/
+*.backup
+*.sqlite
+*.sqlite-*

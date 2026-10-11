@@ -62,11 +62,14 @@
     "start": "node --env-file-if-exists=.env dist/src/http.js",
     "start:stdio": "node --env-file-if-exists=.env dist/src/stdio.js",
     "token:new": "node scripts/generate-token.mjs",
+    "check:plugin": "node scripts/check-plugin.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint .",
     "test": "npm run build && node --test \"dist/test/*.test.js\"",
     "test:e2e": "npm run build && node --test --test-concurrency=1 \"dist/test/e2e/*.test.js\"",
+    "eval:contract": "npm run build && mcp-eval eval/mcp.suite.yaml",
     "schema:write": "npm run build && node scripts/write-schema.mjs",
+    "release:dry-run": "node scripts/release-dry-run.mjs",
     "check": "npm run typecheck && npm run lint && npm test",
     "prepublishOnly": "npm run check && npm run test:e2e && node scripts/verify-pack.mjs",
     "prepare": "npm run build"
@@ -76,20 +79,21 @@
     "@modelcontextprotocol/node": "2.0.0",
     "@modelcontextprotocol/server": "2.3.1",
     "express": "5.2.1",
-    "express-rate-limit": "8.6.2",
+    "express-rate-limit": "8.7.0",
     "helmet": "8.3.0",
     "yaml": "2.9.0",
     "zod": "4.4.3"
   },
   "devDependencies": {
-    "@eslint/js": "9.39.2",
+    "@eslint/js": "10.0.1",
     "@modelcontextprotocol/client": "^2.0.0",
+    "@sarutobi-sasuke/mcp-eval-harness": "github:SarutobiSasuke8/mcp-eval-harness#077c74a60ccd6d9061e35f882ffd3db5f5d17052",
     "@types/express": "5.0.6",
-    "@types/node": "22.19.15",
+    "@types/node": "26.6.4",
     "eslint": "10.8.1",
     "tsx": "4.23.15",
     "typescript": "5.9.3",
-    "typescript-eslint": "8.66.0"
+    "typescript-eslint": "8.71.0"
   },
   "overrides": {
     "@hono/node-server": "2.0.12"

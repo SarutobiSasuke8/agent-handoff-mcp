@@ -1,0 +1,148 @@
+# Agent Handoff MCP contract suite (mcp-eval harness v1).
+#
+# Run with `npm run eval:contract`. The target is eval/target.mjs, which creates a fresh OS temp
+# directory holding a generated test policy (three synthetic agents, random tokens stored only
+# as SHA-256 hashes) and a temp SQLite store seeded with two fixed handoffs, then starts the real
+# stdio entrypoint as agent eval-alpha. Offline, no secrets, nothing outside the temp directory.
+#
+# Contracts run in order against one server, so later contracts see earlier writes. Seeded
+# handoff ...0001 is only read and denied; ...0002 is the one acknowledged.
+#
+# Golden updates are reviewed code changes: `npx mcp-eval eval/mcp.suite.yaml --update-goldens`
+# locally only, never in CI.
+version: 1
+name: agent-handoff-mcp
+timeout_ms: 30000
+target:
+  transport: stdio
+  command: ["node", "target.mjs"]
+contracts:
+  # The six handoff_* tools. exact: true means a seventh tool, or a missing one, fails.
+  - name: tools_listed
+    expect_tools:
+      - handoff_whoami
+      - handoff_send
+      - handoff_inbox
+      - handoff_get
+      - handoff_acknowledge
+      - handoff_update_status
+    exact: true
+
+  # The advertised input schema of every tool, so a silent schema change fails.
+  - name: input_schemas
+    input_schema:
+      handoff_whoami: fixtures/whoami.input.schema.json
+      handoff_send: fixtures/send.input.schema.json
+      handoff_inbox: fixtures/inbox.input.schema.json
+      handoff_get: fixtures/get.input.schema.json
+      handoff_acknowledge: fixtures/acknowledge.input.schema.json
+      handoff_update_status: fixtures/update_status.input.schema.json
+
+  # Identity and boundaries from the generated policy. policy_revision hashes the registry
+  # file, which carries freshly generated token hashes, so it is excluded.
+  - name: whoami_golden
+    tool: handoff_whoami
+    input: {}
+    assert:
+      golden:
+        path: fixtures/whoami.golden.json
+        ignore_paths: [policy_revision]
+
+  # Happy path: both seeded handoffs, newest first, fully deterministic.
+  - name: inbox_golden
+    tool: handoff_inbox
+    input: {}
+    assert:
+      golden: fixtures/inbox.golden.json
+
+  - name: get_golden
+    tool: handoff_get
+    input: { handoff_id: "00000000-0000-4000-8000-000000000001" }
+    assert:
+      golden: fixtures/get.golden.json
+
+  # Happy path: send to the one permitted peer. Generated ids and timestamps are excluded.
+  - name: send_golden
+    tool: handoff_send
+    input:
+      recipient: eval-beta
+      title: "Summarise the contract suite"
+      summary: "The mcp-eval suite needs a short summary for the README."
+      request: "Write three sentences on what the suite covers."
+      tags: ["docs"]
+    assert:
+      golden:
+        path: fixtures/send.golden.json
+        ignore_paths: [handoff.id, handoff.threadId, handoff.createdAt, handoff.updatedAt]
+
+  # Happy path: queued to accepted.
+  - name: acknowledge_golden
+    tool: handoff_acknowledge
+    input: { handoff_id: "00000000-0000-4000-8000-000000000002", note: "On it." }
+    assert:
+      golden:
+        path: fixtures/acknowledge.golden.json
+        ignore_paths: [handoff.updatedAt]
+
+  # Deny: eval-gamma is enabled but not in eval-alpha's send_to.
+  - name: deny_unauthorised_recipient
+    tool: handoff_send
+    input:
+      recipient: eval-gamma
+      title: "Out of policy"
+      summary: "This handoff must be refused."
+      request: "Nothing; the policy forbids this route."
+    assert:
+      is_error: true
+      error_message: "^Agent 'eval-alpha' may not send to 'eval-gamma'[.]$"
+
+  # Deny: restricted content to a peer whose disclosure ceiling is internal.
+  - name: deny_sensitivity_above_ceiling
+    tool: handoff_send
+    input:
+      recipient: eval-beta
+      title: "Restricted material"
+      summary: "This handoff exceeds the recipient's ceiling."
+      request: "Nothing; the ceiling forbids this."
+      sensitivity: restricted
+    assert:
+      is_error: true
+      error_message: "^Sensitivity 'restricted' exceeds an agent disclosure ceiling[.]$"
+
+  # Deny: illegal status transition. A queued handoff cannot jump straight to completed.
+  - name: deny_illegal_transition
+    tool: handoff_update_status
+    input: { handoff_id: "00000000-0000-4000-8000-000000000001", status: completed }
+    assert:
+      is_error: true
+      error_message: "^Agent 'eval-alpha' may not move 'queued' to 'completed'[.]$"
+
+  # Deny: only the sender may cancel. eval-alpha is the recipient of ...0001.
+  - name: deny_recipient_cancel
+    tool: handoff_update_status
+    input: { handoff_id: "00000000-0000-4000-8000-000000000001", status: cancelled }
+    assert:
+      is_error: true
+      error_message: "may not move 'queued' to 'cancelled'"
+
+  # Fail closed: an unknown id gets the same answer as an inaccessible one (no existence oracle).
+  - name: deny_unknown_handoff
+    tool: handoff_get
+    input: { handoff_id: "00000000-0000-4000-8000-00000000ffff" }
+    assert:
+      is_error: true
+      error_message: "^Handoff '00000000-0000-4000-8000-00000000ffff' was not found or is not accessible to this identity[.]$"
+
+  # Deny: strict input objects reject unknown keys.
+  - name: deny_unknown_input_key
+    tool: handoff_whoami
+    input: { impersonate: eval-beta }
+    assert:
+      is_error: true
+
+  # Protocol level: an unregistered tool is a JSON-RPC error, not a result.
+  - name: unknown_tool_is_invalid_params
+    tool: handoff_delete
+    input: {}
+    assert:
+      error_code: INVALID_PARAMS
