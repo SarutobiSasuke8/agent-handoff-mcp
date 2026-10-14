@@ -67,6 +67,7 @@
     "lint": "eslint .",
     "test": "npm run build && node --test \"dist/test/*.test.js\"",
     "test:e2e": "npm run build && node --test --test-concurrency=1 \"dist/test/e2e/*.test.js\"",
+    "test:coverage": "npm run build && node scripts/run-src-coverage.mjs",
     "eval:contract": "npm run build && mcp-eval eval/mcp.suite.yaml",
     "schema:write": "npm run build && node scripts/write-schema.mjs",
     "release:dry-run": "node scripts/release-dry-run.mjs",
