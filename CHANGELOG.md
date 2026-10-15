@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### MCP SDK 2.3.1, 2026-10-15
+
+- Upgrade `@modelcontextprotocol/server` to 2.3.1, `@modelcontextprotocol/node` to 2.1.1, `@modelcontextprotocol/express` to 2.0.2 and the dev `@modelcontextprotocol/client` to 2.3.1. Since SDK 2.3.0 a stateless Streamable HTTP transport serves one request and a server serves one connection, so the HTTP app now builds the MCP server and transport per request and closes them when the response ends. No tool or protocol changes.
+- Add a per-test timeout to the unit, e2e and coverage runs and `timeout-minutes` to the CI jobs, so a hung test fails in minutes instead of holding a runner.
+
 ### Agent Handoff Board packaging, 2026-10-08
 
 - Add the Agent Handoff Board ChatGPT and Codex plugin package in `plugins/agent-handoff-board/` with four skills (create, accept, review, close) over the existing six tools, and `npm run check:plugin`. No tool or protocol changes.

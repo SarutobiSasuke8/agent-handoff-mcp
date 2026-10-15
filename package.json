@@ -65,8 +65,8 @@
     "check:plugin": "node scripts/check-plugin.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint .",
-    "test": "npm run build && node --test \"dist/test/*.test.js\"",
-    "test:e2e": "npm run build && node --test --test-concurrency=1 \"dist/test/e2e/*.test.js\"",
+    "test": "npm run build && node --test --test-timeout=60000 \"dist/test/*.test.js\"",
+    "test:e2e": "npm run build && node --test --test-concurrency=1 --test-timeout=120000 \"dist/test/e2e/*.test.js\"",
     "test:coverage": "npm run build && node scripts/run-src-coverage.mjs",
     "eval:contract": "npm run build && mcp-eval eval/mcp.suite.yaml",
     "schema:write": "npm run build && node scripts/write-schema.mjs",
@@ -76,9 +76,9 @@
     "prepare": "npm run build"
   },
   "dependencies": {
-    "@modelcontextprotocol/express": "2.0.0",
-    "@modelcontextprotocol/node": "2.0.0",
-    "@modelcontextprotocol/server": "2.0.0",
+    "@modelcontextprotocol/express": "2.0.2",
+    "@modelcontextprotocol/node": "2.1.1",
+    "@modelcontextprotocol/server": "2.3.1",
     "express": "5.2.1",
     "express-rate-limit": "8.7.0",
     "helmet": "8.3.0",
@@ -87,7 +87,7 @@
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
-    "@modelcontextprotocol/client": "^2.0.0",
+    "@modelcontextprotocol/client": "^2.3.1",
     "@sarutobi-sasuke/mcp-eval-harness": "github:SarutobiSasuke8/mcp-eval-harness#077c74a60ccd6d9061e35f882ffd3db5f5d17052",
     "@types/express": "5.0.6",
     "@types/node": "26.6.5",
