@@ -12,6 +12,7 @@ const tests = [
 const result = spawnSync(process.execPath, [
   "--enable-source-maps",
   "--test",
+  "--test-timeout=120000",
   "--experimental-test-coverage",
   "--test-reporter=spec",
   "--test-reporter-destination=coverage/spec.txt",

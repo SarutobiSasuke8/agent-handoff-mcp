@@ -7,7 +7,6 @@ import { RegistryTokenVerifier } from "./auth.js";
 import { createRuntime } from "./runtime.js";
 import { createHandoffMcpServer } from "./server.js";
 
-import type { McpServer } from "@modelcontextprotocol/server";
 import type { ErrorRequestHandler, Express } from "express";
 import type { AppConfig } from "./config.js";
 import type { AgentRegistry } from "./registry.js";
@@ -16,7 +15,6 @@ import type { HandoffStore } from "./store.js";
 
 export interface HttpApp {
   app: Express;
-  mcpServer: McpServer;
   registry: AgentRegistry;
   store: HandoffStore;
   service: HandoffService;
@@ -26,14 +24,6 @@ export interface HttpApp {
 export async function buildHttpApp(config: AppConfig): Promise<HttpApp> {
   const { registry, store, service } = createRuntime(config);
   try { await registry.current(); }
-  catch (error) { store.close(); throw error; }
-
-  const mcpServer = createHandoffMcpServer(service);
-  const transport = new NodeStreamableHTTPServerTransport({
-    sessionIdGenerator: undefined,
-    enableJsonResponse: true,
-  });
-  try { await mcpServer.connect(transport); }
   catch (error) { store.close(); throw error; }
 
   const app = createMcpExpressApp({
@@ -74,6 +64,19 @@ export async function buildHttpApp(config: AppConfig): Promise<HttpApp> {
     limiter,
     requireBearerAuth({ verifier, requiredScopes: ["handoff"] }),
     async (request, response) => {
+      // Stateless Streamable HTTP. Since SDK 2.3.0 a stateless transport serves
+      // exactly one request and a server serves one connection at a time, so
+      // both are built per request and closed when the response ends. The
+      // runtime (registry, store, service) stays shared across requests.
+      const mcpServer = createHandoffMcpServer(service);
+      const transport = new NodeStreamableHTTPServerTransport({
+        sessionIdGenerator: undefined,
+        enableJsonResponse: true,
+      });
+      response.on("close", () => {
+        void mcpServer.close();
+      });
+      await mcpServer.connect(transport);
       await transport.handleRequest(request, response, request.body);
     },
   );
@@ -91,12 +94,10 @@ export async function buildHttpApp(config: AppConfig): Promise<HttpApp> {
 
   return {
     app,
-    mcpServer,
     registry,
     store,
     service,
     close: async () => {
-      await mcpServer.close();
       store.close();
     },
   };
