@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-26.04, windows-latest]
         # 22.13 is the documented minimum, 22.x the current LTS line, 24.x the
         # line where node:sqlite is no longer experimental.
         node: ["22.13.1", "22.x", "24.x"]
@@ -34,7 +34,7 @@ jobs:
 
   coverage:
     name: src coverage
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -50,7 +50,7 @@ jobs:
     name: ci-ok
     needs: [check, coverage]
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - name: Verify matrix result
         run: |
