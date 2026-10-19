@@ -8,7 +8,6 @@ import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const inspectorVersion = "2.11.0";
-const npm = process.platform === "win32" ? "npm.cmd" : "npm";
 // npm's own CLI avoids shell quoting on Windows, including JSON tool args.
 const npmCli = process.env.npm_execpath ?? path.join(path.dirname(process.execPath), "node_modules/npm/bin/npm-cli.js");
 const fixture = (name) => JSON.parse(readFileSync(path.join(root, "eval/fixtures", name), "utf8"));
@@ -19,7 +18,9 @@ function run(method, tool, input = {}, acceptedSeed = false) {
   if (tool) args.push("--tool-name", tool, "--tool-args-json", JSON.stringify(input));
   args.push("--", process.execPath, "eval/target.mjs");
   if (acceptedSeed) args.push("--accept-second");
-  const invocation = npmCli.endsWith(".js") ? [process.execPath, [npmCli, ...args]] : [npm, args];
+  // POSIX installations keep npm under ../lib/node_modules or a package-manager
+  // prefix, so use its PATH executable rather than guessing its module path.
+  const invocation = process.platform === "win32" ? [process.execPath, [npmCli, ...args]] : ["npm", args];
   const child = spawnSync(invocation[0], invocation[1], {
     cwd: root, encoding: "utf8", timeout: 120_000, maxBuffer: 2 * 1024 * 1024,
     // No env-file flag, real token, live registry, database, or external endpoint.
