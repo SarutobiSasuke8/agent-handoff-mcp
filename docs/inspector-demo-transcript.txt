@@ -1,0 +1,22 @@
+Recorded locally on 2026-10-19, Node v22.22.1, Windows.
+Synthetic eval-alpha/eval-beta workspace only; no live data or services.
+
+$ npm ci --no-audit --no-fund
+added 203 packages
+$ npm run check
+typecheck: passed
+lint: passed
+tests: 47 passed, 0 failed
+$ node eval/inspector.mjs
+MCP Inspector 2.11.0; built stdio server; synthetic temp workspace per invocation
+PASS tools/list: exactly six tools and all existing input-schema goldens matched
+PASS handoff_whoami: existing golden matched
+PASS handoff_inbox: existing golden matched
+PASS handoff_get: existing golden matched
+PASS handoff_send: existing golden matched
+PASS handoff_acknowledge: existing golden matched
+PASS handoff_update_status: existing golden matched
+PASS Inspector compatibility: tools/list plus one successful call per tool
+
+Output above is a concise terminal transcript, not evidence of hosted CI,
+publication, installation for a user, or a live handoff.
