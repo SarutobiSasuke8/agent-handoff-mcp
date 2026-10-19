@@ -118,6 +118,18 @@ Each stdio client supplies its identity through its own process environment whil
 
 Use HTTP when multiple clients should connect to one long-running service. Use stdio for local clients that can safely receive a fixed identity through their own configuration. Both transports re-check the registry on every operation, so revocation applies to running stdio sessions too.
 
+## Operational metrics
+
+Set `HANDOFF_MCP_METRICS=1` to record in-process counters for handoffs
+created, accepted (claimed), expired and store errors, plus per-tool call
+duration histograms. The default is off. The snapshot from
+`src/metrics.ts` uses an OpenTelemetry OTLP JSON-shaped
+`resourceMetrics/scopeMetrics` structure. It has only fixed metric names,
+counts, timings and a bounded tool-name label; no handoff content, titles,
+agent text or tokens enter the recorder. No network exporter or public
+metrics endpoint is installed. The expired counter remains 0 because the
+current handoff lifecycle has no expiry transition.
+
 ## Documentation
 
 - [Clean-room quickstart](docs/QUICKSTART.md)
