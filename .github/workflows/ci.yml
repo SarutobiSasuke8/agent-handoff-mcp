@@ -31,6 +31,7 @@ jobs:
       - run: npm run check
       - run: npm run test:e2e
       - run: node scripts/verify-pack.mjs
+      - run: npm run check:registry
 
   coverage:
     name: src coverage

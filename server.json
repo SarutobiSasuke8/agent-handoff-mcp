@@ -1,0 +1,21 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.sarutobisasuke8/agent-handoff-mcp",
+  "title": "Agent Handoff MCP",
+  "description": "Bounded, auditable handoffs between AI agents through a local MCP server.",
+  "repository": {
+    "url": "https://github.com/SarutobiSasuke8/agent-handoff-mcp",
+    "source": "github"
+  },
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@sarutobi-sasuke/agent-handoff-mcp",
+      "version": "0.1.0",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}
