@@ -1,5 +1,6 @@
 {
   "name": "@sarutobi-sasuke/agent-handoff-mcp",
+  "mcpName": "io.github.SarutobiSasuke8/agent-handoff-mcp",
   "version": "0.1.0",
   "description": "A local-first MCP server for bounded, auditable handoffs between AI agents.",
   "license": "Apache-2.0",
@@ -42,12 +43,15 @@
     "./store": "./dist/src/store.js"
   },
   "files": [
-    "dist/src",
+    "dist/src/**/*.js",
+    "dist/src/**/*.d.ts",
     "scripts/generate-token.mjs",
     "config/agents.example.yaml",
-    "schema",
-    "docs",
-    ".env.example",
+    "schema/agent-registry.schema.v1.json",
+    "docs/ARCHITECTURE.md",
+    "docs/PROTOCOL.md",
+    "docs/QUICKSTART.md",
+    "docs/RECOVERY.md",
     "README.md",
     "CHANGELOG.md",
     "SECURITY.md",
@@ -63,6 +67,7 @@
     "start:stdio": "node --env-file-if-exists=.env dist/src/stdio.js",
     "token:new": "node scripts/generate-token.mjs",
     "check:plugin": "node scripts/check-plugin.mjs",
+    "check:registry": "npm run build:package && node scripts/check-registry-pack.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint .",
     "test": "npm run build && node --test --test-timeout=60000 \"dist/test/*.test.js\"",
@@ -72,8 +77,9 @@
     "schema:write": "npm run build && node scripts/write-schema.mjs",
     "release:dry-run": "node scripts/release-dry-run.mjs",
     "check": "npm run typecheck && npm run lint && npm test",
-    "prepublishOnly": "npm run check && npm run test:e2e && node scripts/verify-pack.mjs",
-    "prepare": "npm run build"
+    "prepublishOnly": "npm run check && npm run test:e2e && node scripts/verify-pack.mjs && npm run check:registry",
+    "prepare": "npm run build:package",
+    "build:package": "tsc -p tsconfig.package.json"
   },
   "dependencies": {
     "@modelcontextprotocol/express": "2.0.2",
@@ -91,6 +97,8 @@
     "@sarutobi-sasuke/mcp-eval-harness": "github:SarutobiSasuke8/mcp-eval-harness#077c74a60ccd6d9061e35f882ffd3db5f5d17052",
     "@types/express": "5.0.6",
     "@types/node": "26.6.5",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
     "eslint": "10.12.0",
     "tsx": "4.23.15",
     "typescript": "5.9.3",

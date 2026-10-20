@@ -1,0 +1,44 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.SarutobiSasuke8/agent-handoff-mcp",
+  "title": "Agent Handoff MCP",
+  "description": "Bounded, auditable handoffs between AI agents through a local MCP server.",
+  "repository": {
+    "url": "https://github.com/SarutobiSasuke8/agent-handoff-mcp",
+    "source": "github"
+  },
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@sarutobi-sasuke/agent-handoff-mcp",
+      "version": "0.1.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "stdio"
+        }
+      ],
+      "environmentVariables": [
+        {
+          "name": "HANDOFF_AGENT_ID",
+          "description": "Existing enabled identity in the operator-provisioned registry.",
+          "isRequired": true
+        },
+        {
+          "name": "HANDOFF_MCP_REGISTRY",
+          "description": "Absolute path to the operator-provisioned agent registry YAML.",
+          "isRequired": true
+        },
+        {
+          "name": "HANDOFF_MCP_DB",
+          "description": "Absolute path to the local handoff SQLite database.",
+          "isRequired": true
+        }
+      ]
+    }
+  ]
+}

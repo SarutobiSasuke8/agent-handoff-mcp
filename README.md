@@ -136,6 +136,13 @@ current handoff lifecycle has no expiry transition.
 
 ## Documentation
 
+The draft MCP Registry manifest launches the npm binary with the `stdio`
+argument and requires `HANDOFF_AGENT_ID`, `HANDOFF_MCP_REGISTRY` and
+`HANDOFF_MCP_DB` from the operator. It creates no identities or credentials.
+The namespace uses the exact GitHub owner spelling, `io.github.SarutobiSasuke8`.
+`prepublishOnly` includes `check:registry`; publishing and registry login remain
+separate operator actions. Builds omit source maps and their JavaScript links.
+
 - [Clean-room quickstart](docs/QUICKSTART.md)
 - [Protocol and lifecycle](docs/PROTOCOL.md)
 - [Architecture](docs/ARCHITECTURE.md)

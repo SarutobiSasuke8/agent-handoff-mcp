@@ -21,7 +21,6 @@ const required = [
   "docs/PROTOCOL.md",
   "docs/QUICKSTART.md",
   "docs/RECOVERY.md",
-  ".env.example",
   "README.md",
   "CHANGELOG.md",
   "SECURITY.md",
