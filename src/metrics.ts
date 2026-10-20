@@ -1,3 +1,18 @@
+import { readFileSync } from "node:fs";
+
+// Support compiled dist/src and the source-mode development command.
+const packageVersion = (() => {
+  for (const relative of ["../package.json", "../../package.json"]) {
+    try {
+      const metadata = JSON.parse(readFileSync(new URL(relative, import.meta.url), "utf8")) as { name?: string; version?: string };
+      if (metadata.name === "@sarutobi-sasuke/agent-handoff-mcp" && metadata.version) return metadata.version;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    }
+  }
+  throw new Error("Agent Handoff package version is unavailable.");
+})();
+
 /** In-process OTLP JSON-shaped metrics. No exporter, network call or content labels. */
 export const toolNames = [
   "handoff_whoami", "handoff_send", "handoff_inbox", "handoff_get",
@@ -56,8 +71,22 @@ export class OperationalMetrics {
       } },
     ];
     return { resourceMetrics: [{ resource: { attributes: [] },
-      scopeMetrics: [{ scope: { name: "agent-handoff-mcp", version: "0.1.0" }, metrics }] }] };
+      scopeMetrics: [{ scope: { name: "agent-handoff-mcp", version: packageVersion }, metrics }] }] };
   }
 }
 
 export const operationalMetrics = new OperationalMetrics(process.env.HANDOFF_MCP_METRICS === "1");
+
+/** Local server stderr only; stdout remains reserved for the stdio protocol. */
+export function startMetricsLogging(
+  metrics = operationalMetrics,
+  write: (line: string) => void = (line) => { process.stderr.write(line); },
+  intervalMs = 60_000,
+): () => void {
+  if (!metrics.enabled) return () => {};
+  const emit = () => { write(`${JSON.stringify(metrics.snapshot())}\n`); };
+  emit();
+  const timer = setInterval(emit, intervalMs);
+  timer.unref();
+  return () => { clearInterval(timer); emit(); };
+}

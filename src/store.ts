@@ -6,6 +6,7 @@ import { DatabaseSync } from "node:sqlite";
 import { DomainError } from "./errors.js";
 import { registerServer } from "./recovery-lock.js";
 import { operationalMetrics } from "./metrics.js";
+import { migrateStore } from "./migrations.js";
 
 import type { CreateHandoffInput, Handoff, HandoffEvent, HandoffStatus } from "./types.js";
 
@@ -137,47 +138,7 @@ export class HandoffStore {
     try {
       this.db = opened = new DatabaseSync(databaseFile);
       this.db.exec("PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;");
-      this.db.exec(`
-      CREATE TABLE IF NOT EXISTS handoffs (
-        id TEXT PRIMARY KEY,
-        thread_id TEXT NOT NULL,
-        parent_id TEXT REFERENCES handoffs(id),
-        depth INTEGER NOT NULL CHECK(depth >= 0),
-        sender TEXT NOT NULL,
-        recipient TEXT NOT NULL,
-        title TEXT NOT NULL,
-        summary TEXT NOT NULL,
-        request TEXT NOT NULL,
-        context_refs_json TEXT NOT NULL,
-        artifact_refs_json TEXT NOT NULL,
-        tags_json TEXT NOT NULL,
-        sensitivity TEXT NOT NULL CHECK(sensitivity IN ('public-safe','internal','restricted')),
-        priority TEXT NOT NULL CHECK(priority IN ('low','normal','high','urgent')),
-        status TEXT NOT NULL CHECK(status IN ('queued','accepted','blocked','completed','cancelled')),
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL,
-        idempotency_key TEXT,
-        payload_hash TEXT,
-        UNIQUE(sender, idempotency_key)
-      );
-      CREATE INDEX IF NOT EXISTS idx_handoffs_recipient_status ON handoffs(recipient, status, created_at DESC);
-      CREATE INDEX IF NOT EXISTS idx_handoffs_thread ON handoffs(thread_id, created_at);
-      CREATE TABLE IF NOT EXISTS handoff_events (
-        id TEXT PRIMARY KEY,
-        handoff_id TEXT NOT NULL REFERENCES handoffs(id),
-        actor TEXT NOT NULL,
-        event_type TEXT NOT NULL,
-        from_status TEXT,
-        to_status TEXT NOT NULL,
-        note TEXT,
-        created_at TEXT NOT NULL
-      );
-      CREATE INDEX IF NOT EXISTS idx_events_handoff ON handoff_events(handoff_id, created_at);
-      `);
-      const columns = this.db.prepare("SELECT name FROM pragma_table_info('handoffs')").all() as unknown as { name: string }[];
-      if (!columns.some((column) => column.name === "payload_hash")) {
-        this.db.exec("ALTER TABLE handoffs ADD COLUMN payload_hash TEXT");
-      }
+      migrateStore(this.db);
     } catch (error) {
       if (!(error instanceof DomainError)) operationalMetrics.storeError();
       try { opened?.close(); } finally { this.releaseServer(); }
@@ -294,7 +255,7 @@ export class HandoffStore {
       this.insertEvent(handoffId, actor, toStatus, current.status, toStatus, note, now);
       const updated = this.get(handoffId);
       this.db.exec("COMMIT");
-      if (toStatus === "accepted") operationalMetrics.handoffClaimed();
+      if (current.status === "queued" && toStatus === "accepted") operationalMetrics.handoffClaimed();
       return updated;
     } catch (error) {
       this.db.exec("ROLLBACK");

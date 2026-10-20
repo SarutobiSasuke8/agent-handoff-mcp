@@ -2,6 +2,7 @@
 import { StdioServerTransport } from "@modelcontextprotocol/server/stdio";
 
 import { loadConfig } from "./config.js";
+import { startMetricsLogging } from "./metrics.js";
 import { createRuntime } from "./runtime.js";
 import { createHandoffMcpServer } from "./server.js";
 
@@ -19,7 +20,9 @@ catch (error) { store.close(); throw error; }
 async function shutdown(): Promise<void> {
   await mcpServer.close();
   store.close();
+  stopMetricsLogging();
 }
 
+const stopMetricsLogging = startMetricsLogging();
 process.on("SIGINT", () => void shutdown());
 process.on("SIGTERM", () => void shutdown());

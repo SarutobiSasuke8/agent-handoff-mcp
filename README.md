@@ -122,8 +122,12 @@ Use HTTP when multiple clients should connect to one long-running service. Use s
 
 Set `HANDOFF_MCP_METRICS=1` to record in-process counters for handoffs
 created, accepted (claimed), expired and store errors, plus per-tool call
-duration histograms. The default is off. The snapshot from
-`src/metrics.ts` uses an OpenTelemetry OTLP JSON-shaped
+duration histograms. Only the initial queued-to-accepted move counts as a claim.
+The default is off. When enabled, both HTTP and stdio servers write one JSON
+snapshot to local stderr at startup, every 60 seconds and on graceful shutdown.
+For example, `HANDOFF_MCP_METRICS=1 agent-handoff-mcp stdio 2>metrics.jsonl`
+captures the running process's snapshots without mixing them with MCP stdout.
+The snapshot from `src/metrics.ts` uses an OpenTelemetry OTLP JSON-shaped
 `resourceMetrics/scopeMetrics` structure. It has only fixed metric names,
 counts, timings and a bounded tool-name label; no handoff content, titles,
 agent text or tokens enter the recorder. No network exporter or public
@@ -151,5 +155,11 @@ Apache-2.0. See [LICENSE](LICENSE).
 # Recovery and local release evidence
 
 Use `agent-handoff-mcp backup <out-file>` for a live WAL snapshot with the validated registry, and `restore <file>` into fresh files after stopping servers. Existing destinations require `--force`; live servers, corrupt backups and incomplete restores remain blocked. See [Recovery](docs/RECOVERY.md) for commands, policy reconciliation and the limits of local process guards.
+
+The local SQLite store applies ordered, recorded migrations at startup in a
+`schema_migrations` table. It recognises existing unversioned stores and
+records their observed schema before applying pending changes. A store with a
+newer schema version refuses to open with a clear error; use a compatible
+binary rather than downgrading the database.
 
 `npm run release:dry-run` produces local checks, e2e recovery proof, allowlist verification, SPDX SBOM, tarball and SHA-256 evidence under gitignored `release-evidence/`. Package publication remains an owner action.
