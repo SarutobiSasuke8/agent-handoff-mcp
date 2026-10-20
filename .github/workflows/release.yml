@@ -81,7 +81,10 @@ jobs:
           retention-days: 90
       - name: Publish dry run (nothing is uploaded)
         if: ${{ inputs.dry_run == true }}
-        run: npm publish --dry-run --provenance --access public
+        # --ignore-scripts: the gates above already ran. Under --dry-run npm
+        # exports npm_config_dry_run to prepublishOnly, which turns the e2e
+        # suite's nested `npm pack` into a no-op and fails it.
+        run: npm publish --dry-run --ignore-scripts --provenance --access public
       - name: Publish to npm with provenance
         if: ${{ inputs.dry_run != true }}
         run: npm publish --provenance --access public

@@ -14,7 +14,10 @@ trusted publisher for `@sarutobi-sasuke/agent-handoff-mcp`.
 Actions, Release, Run workflow. Pick any branch or tag and leave **dry_run**
 ticked. The run does `npm ci`, `npm run check`, the e2e suite, the tarball
 allowlist check, the SBOM, `npm pack` with checksums, and
-`npm publish --dry-run --provenance`. It skips the tag/version check so it can
+`npm publish --dry-run --ignore-scripts --provenance` (the gates already ran
+as their own steps). Do not run a plain `npm publish --dry-run` locally: npm
+passes the dry-run flag to `prepublishOnly`, so the e2e suite's nested
+`npm pack` makes no tarball and fails. It skips the tag/version check so it can
 run from a branch. The evidence is uploaded as the `release-evidence` artefact.
 
 For a local equivalent without GitHub, run `npm run release:dry-run`
