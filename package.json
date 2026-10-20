@@ -97,6 +97,7 @@
     "@sarutobi-sasuke/mcp-eval-harness": "github:SarutobiSasuke8/mcp-eval-harness#077c74a60ccd6d9061e35f882ffd3db5f5d17052",
     "@types/express": "5.0.6",
     "@types/node": "26.6.5",
+    "@types/pg": "8.23.1",
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1",
     "eslint": "10.12.0",
@@ -106,5 +107,8 @@
   },
   "overrides": {
     "@hono/node-server": "2.0.12"
+  },
+  "optionalDependencies": {
+    "pg": "8.23.1"
   }
 }

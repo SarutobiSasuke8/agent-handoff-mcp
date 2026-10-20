@@ -7,7 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Nothing yet beyond 0.1.0.
+### Store adapter interface and experimental Postgres store
+
+- Extract `HandoffStoreAdapter` (`src/store-adapter.ts`). The SQLite
+  `HandoffStore` implements it unchanged and remains the default.
+- Add an experimental Postgres adapter behind `HANDOFF_STORE=postgres` and
+  `HANDOFF_PG_URL`, with `pg` as an optional dependency. Row-locked
+  transitions, cross-host idempotency and one shared schema version.
+- The `backup` and `restore` CLI refuses to run against the default SQLite
+  path when the Postgres store is selected.
+- Add `docs/STORE-POSTGRES.md`: interface, migrations, concurrency, audit
+  parity, backup and restore, and the multi-host position (#17).
 
 ## [0.1.0] - unreleased
 
