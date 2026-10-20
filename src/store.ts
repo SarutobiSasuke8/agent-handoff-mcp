@@ -5,6 +5,7 @@ import { DatabaseSync } from "node:sqlite";
 
 import { DomainError } from "./errors.js";
 import { registerServer } from "./recovery-lock.js";
+import { operationalMetrics } from "./metrics.js";
 import { migrateStore } from "./migrations.js";
 
 import type { CreateHandoffInput, Handoff, HandoffEvent, HandoffStatus } from "./types.js";
@@ -139,6 +140,7 @@ export class HandoffStore {
       this.db.exec("PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;");
       migrateStore(this.db);
     } catch (error) {
+      if (!(error instanceof DomainError)) operationalMetrics.storeError();
       try { opened?.close(); } finally { this.releaseServer(); }
       throw error;
     }
@@ -200,9 +202,11 @@ export class HandoffStore {
       this.insertEvent(id, sender, "created", undefined, "queued", undefined, now);
       const created = this.get(id);
       this.db.exec("COMMIT");
+      operationalMetrics.handoffCreated();
       return created;
     } catch (error) {
       this.db.exec("ROLLBACK");
+      if (!(error instanceof DomainError)) operationalMetrics.storeError();
       throw error;
     }
   }
@@ -251,9 +255,11 @@ export class HandoffStore {
       this.insertEvent(handoffId, actor, toStatus, current.status, toStatus, note, now);
       const updated = this.get(handoffId);
       this.db.exec("COMMIT");
+      if (current.status === "queued" && toStatus === "accepted") operationalMetrics.handoffClaimed();
       return updated;
     } catch (error) {
       this.db.exec("ROLLBACK");
+      if (!(error instanceof DomainError)) operationalMetrics.storeError();
       throw error;
     }
   }
