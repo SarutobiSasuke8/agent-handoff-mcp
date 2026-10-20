@@ -21,6 +21,13 @@ if (server.$schema !== schema.$id || server.name !== packageJson.mcpName ||
   throw new Error("Registry schema, name, version or npm package identity does not match package.json");
 }
 
+const npmEntry = server.packages.find((entry) => entry.registryType === "npm");
+if (npmEntry.transport.type !== "stdio" || npmEntry.packageArguments?.[0]?.value !== "stdio" ||
+    !["HANDOFF_AGENT_ID", "HANDOFF_MCP_REGISTRY", "HANDOFF_MCP_DB"].every((name) =>
+      npmEntry.environmentVariables?.some((entry) => entry.name === name && entry.isRequired))) {
+  throw new Error("Registry installation must launch stdio with explicit local configuration");
+}
+
 const npmCli = process.env.npm_execpath;
 const output = npmCli
   ? execFileSync(process.execPath, [npmCli, "pack", "--dry-run", "--json", "--ignore-scripts"], { encoding: "utf8" })
@@ -37,5 +44,10 @@ const forbidden = files.filter((name) =>
   /(?:^|\/)[^/]*\.sqlite(?:$|[-.])/iu.test(name));
 if (missing.length || forbidden.length) {
   throw new Error(`npm pack contents invalid. Missing: ${missing.join(", ") || "none"}; forbidden: ${forbidden.join(", ") || "none"}`);
+}
+for (const name of files.filter((name) => name.endsWith(".js"))) {
+  if (/sourceMappingURL=/u.test(readFileSync(new URL(`../${name}`, import.meta.url), "utf8"))) {
+    throw new Error(`Shipped JavaScript references an excluded source map: ${name}`);
+  }
 }
 process.stdout.write(`Registry schema and npm pack verified (${files.length} files).\n`);

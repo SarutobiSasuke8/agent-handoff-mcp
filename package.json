@@ -1,6 +1,6 @@
 {
   "name": "@sarutobi-sasuke/agent-handoff-mcp",
-  "mcpName": "io.github.sarutobisasuke8/agent-handoff-mcp",
+  "mcpName": "io.github.SarutobiSasuke8/agent-handoff-mcp",
   "version": "0.1.0",
   "description": "A local-first MCP server for bounded, auditable handoffs between AI agents.",
   "license": "Apache-2.0",
@@ -77,7 +77,7 @@
     "schema:write": "npm run build && node scripts/write-schema.mjs",
     "release:dry-run": "node scripts/release-dry-run.mjs",
     "check": "npm run typecheck && npm run lint && npm test",
-    "prepublishOnly": "npm run check && npm run test:e2e && node scripts/verify-pack.mjs",
+    "prepublishOnly": "npm run check && npm run test:e2e && node scripts/verify-pack.mjs && npm run check:registry",
     "prepare": "npm run build"
   },
   "dependencies": {
