@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Nothing yet beyond 0.1.0.
+
+## [0.1.0] - unreleased
+
+Release candidate for the first npm publication. The date is set when the
+`v0.1.0` tag is pushed; see `RELEASING.md`.
+
+### Release tooling, 2026-10-20
+
+- Add a dry-run path to the release workflow: a manual dispatch defaults to
+  `dry_run`, runs every release gate and `npm publish --dry-run --provenance`
+  from any ref, and publishes nothing. Tag pushes publish as before.
+- Add `RELEASING.md` with the owner steps for the `v0.1.0` tag.
+
 ### MCP SDK 2.3.1, 2026-10-15
 
 - Upgrade `@modelcontextprotocol/server` to 2.3.1, `@modelcontextprotocol/node` to 2.1.1, `@modelcontextprotocol/express` to 2.0.2 and the dev `@modelcontextprotocol/client` to 2.3.1. Since SDK 2.3.0 a stateless Streamable HTTP transport serves one request and a server serves one connection, so the HTTP app now builds the MCP server and transport per request and closes them when the response ends. No tool or protocol changes.
@@ -85,4 +99,5 @@ candidate on `main`.
   `SECURITY.md`, `CHANGELOG.md`, `ROADMAP.md`, and `CONTRIBUTING.md`.
 - Requires Node 22.13 or later.
 
-[Unreleased]: https://github.com/SarutobiSasuke8/agent-handoff-mcp/commits/main
+[Unreleased]: https://github.com/SarutobiSasuke8/agent-handoff-mcp/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/SarutobiSasuke8/agent-handoff-mcp/releases/tag/v0.1.0
