@@ -90,5 +90,6 @@ try {
 }
 
 console.log("\n| Check | Result | Detail |\n|---|---|---|");
-for (const row of rows) console.log(`| ${row.check} | ${row.ok ? "Passed" : "FAILED"} | ${row.detail.replace(/\|/g, "\\|")} |`);
+const cell = (text) => String(text).replace(/\\/g, "\\\\").replace(/\|/g, "\\|");
+for (const row of rows) console.log(`| ${cell(row.check)} | ${row.ok ? "Passed" : "FAILED"} | ${cell(row.detail)} |`);
 process.exit(rows.every((row) => row.ok) ? 0 : 1);
