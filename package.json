@@ -67,7 +67,7 @@
     "start:stdio": "node --env-file-if-exists=.env dist/src/stdio.js",
     "token:new": "node scripts/generate-token.mjs",
     "check:plugin": "node scripts/check-plugin.mjs",
-    "check:registry": "node scripts/check-registry-pack.mjs",
+    "check:registry": "npm run build:package && node scripts/check-registry-pack.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint .",
     "test": "npm run build && node --test --test-timeout=60000 \"dist/test/*.test.js\"",
@@ -78,7 +78,8 @@
     "release:dry-run": "node scripts/release-dry-run.mjs",
     "check": "npm run typecheck && npm run lint && npm test",
     "prepublishOnly": "npm run check && npm run test:e2e && node scripts/verify-pack.mjs && npm run check:registry",
-    "prepare": "npm run build"
+    "prepare": "npm run build:package",
+    "build:package": "tsc -p tsconfig.package.json"
   },
   "dependencies": {
     "@modelcontextprotocol/express": "2.0.2",
