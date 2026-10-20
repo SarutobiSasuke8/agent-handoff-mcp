@@ -8,10 +8,20 @@
 #      @sarutobi-sasuke/agent-handoff-mcp. No npm token is stored in GitHub.
 #   2. Confirm CHANGELOG.md, package.json version, and the tag all agree.
 #   3. Trigger the workflow from the Actions tab selecting that tag (or push it).
+#
+# Dry run: a manual dispatch defaults to dry_run=true. It runs every gate,
+# builds the release evidence and runs `npm publish --dry-run --provenance`
+# from any ref, and never publishes. Untick dry_run on a version tag to publish.
+# See RELEASING.md.
 name: Release
 
 on:
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run: run every gate and npm publish --dry-run, publish nothing"
+        type: boolean
+        default: true
   push:
     tags:
       - "v*.*.*"
@@ -42,6 +52,7 @@ jobs:
       - name: Verify tarball allowlist
         run: node scripts/verify-pack.mjs
       - name: Verify tag matches package version
+        if: ${{ inputs.dry_run != true }}
         run: |
           if [[ "$GITHUB_REF" != refs/tags/v* ]]; then
             echo "Select a version tag for release; branch dispatches cannot publish." >&2
@@ -68,5 +79,9 @@ jobs:
             checksums.sha256
             sbom.spdx.json
           retention-days: 90
+      - name: Publish dry run (nothing is uploaded)
+        if: ${{ inputs.dry_run == true }}
+        run: npm publish --dry-run --provenance --access public
       - name: Publish to npm with provenance
+        if: ${{ inputs.dry_run != true }}
         run: npm publish --provenance --access public
