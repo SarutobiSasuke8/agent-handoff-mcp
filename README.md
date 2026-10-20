@@ -140,4 +140,10 @@ Apache-2.0. See [LICENSE](LICENSE).
 
 Use `agent-handoff-mcp backup <out-file>` for a live WAL snapshot with the validated registry, and `restore <file>` into fresh files after stopping servers. Existing destinations require `--force`; live servers, corrupt backups and incomplete restores remain blocked. See [Recovery](docs/RECOVERY.md) for commands, policy reconciliation and the limits of local process guards.
 
+The local SQLite store applies ordered, recorded migrations at startup in a
+`schema_migrations` table. It recognises existing unversioned stores and
+records their observed schema before applying pending changes. A store with a
+newer schema version refuses to open with a clear error; use a compatible
+binary rather than downgrading the database.
+
 `npm run release:dry-run` produces local checks, e2e recovery proof, allowlist verification, SPDX SBOM, tarball and SHA-256 evidence under gitignored `release-evidence/`. Package publication remains an owner action.
