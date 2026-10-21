@@ -118,6 +118,32 @@ Each stdio client supplies its identity through its own process environment whil
 
 Use HTTP when multiple clients should connect to one long-running service. Use stdio for local clients that can safely receive a fixed identity through their own configuration. Both transports re-check the registry on every operation, so revocation applies to running stdio sessions too.
 
+## Local HTTP conformance check
+
+Run `npm run conformance` from a source checkout after `npm ci`. It validates
+`server.json` against the existing pinned Registry schema, starts an isolated
+loopback server and disposable SQLite registry fixture, checks missing and
+invalid bearer requests with curl, and runs the official framework plus an
+Inspector tools/list and read-only handoff_whoami call. It requires curl and
+network access for the exactly pinned npx tools. No operator registry, existing
+database, stored login or live service is used.
+
+The asserted spec revision is **2026-07-28**, using
+`@modelcontextprotocol/conformance@0.2.0-alpha.12 --requirements 2026-07-28`.
+The current HTTP transport targets **2025-11-25**; stateless request handling
+alone does not establish support for the newer lifecycle. Inspector
+`@modelcontextprotocol/inspector@2.11.0` explicitly uses its legacy protocol
+era for the application smoke. The upstream framework has no bearer-header
+flag, so a test-only fetch adapter adds the ephemeral fixture header solely
+to that loopback endpoint. Production authentication is exercised unchanged.
+
+The check currently exits **1** on the revision gap. Findings and redacted
+logs go to ignored `release-evidence/conformance/` (override with
+`HANDOFF_CONFORMANCE_OUTPUT`). Every check runs even when another fails.
+Failures are never silently baselined or repaired in the runner. See
+[the first-run findings](docs/CONFORMANCE-2026-10-21.md) before proposing
+this as a release gate. This command does not publish or modify CI.
+
 ## Operational metrics
 
 Set `HANDOFF_MCP_METRICS=1` to record in-process counters for handoffs

@@ -79,7 +79,8 @@
     "check": "npm run typecheck && npm run lint && npm test",
     "prepublishOnly": "npm run check && npm run test:e2e && node scripts/verify-pack.mjs && npm run check:registry",
     "prepare": "npm run build:package",
-    "build:package": "tsc -p tsconfig.package.json"
+    "build:package": "tsc -p tsconfig.package.json",
+    "conformance": "npm run build && node tools/conformance.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/express": "2.0.2",
