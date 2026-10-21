@@ -255,8 +255,15 @@ Detail:
 
 - `npm test` always runs the store-selection tests, the migration-parity test
   and the SQLite run of the adapter contract.
-- The Postgres suite runs only when `HANDOFF_PG_URL` is set, and is otherwise
-  reported as skipped. Point it only at a **local, throwaway** database, for
+- `npm test` also always runs the Postgres suite against **PGlite** (Postgres
+  compiled to WebAssembly, dev dependencies `@electric-sql/pglite` and
+  `@electric-sql/pglite-socket`). PGlite runs in-process behind a loopback
+  socket on a random port, so there is no container and no network. This
+  checks the SQL, the migrations and the lifecycle logic on every CI run.
+  PGlite is one backend that runs one transaction at a time, so the race
+  tests pass there by serialisation. They do not prove row locking.
+- The real-Postgres suite runs only when `HANDOFF_PG_URL` is set, and is
+  otherwise reported as skipped. Point it only at a **local, throwaway** database, for
   example a disposable container:
 
   ```sh
@@ -274,12 +281,11 @@ Detail:
 
 ## Known gaps (experimental)
 
-- Not yet run in CI against a real Postgres. The suite was checked locally
-  against PGlite (Postgres compiled to WebAssembly) behind a socket server.
-  That proves the SQL and migrations work. It does not prove row-lock
-  behaviour across separate backends, because PGlite is one backend. A CI job
-  with a Postgres service container is the next step. Workflow changes are
-  left to the owner.
+- Not yet run against a real multi-backend Postgres. CI runs the suite on
+  PGlite only (see Testing). That proves the SQL and migrations work. It does
+  not prove row-lock behaviour across separate backends. A CI job with a
+  Postgres service container and `HANDOFF_PG_URL` is the next step.
+  Workflow changes are left to the owner.
 - No connection retry or backoff. If the database drops, calls fail with a
   store error until it comes back.
 - `/readyz` reports registry state only. It does not yet check the database.

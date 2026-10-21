@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
-import { after, describe, test } from "node:test";
+import { createServer } from "node:net";
+import { after, before, describe, test } from "node:test";
 
 import { loadConfig } from "../src/config.js";
 import { CURRENT_SCHEMA_VERSION } from "../src/migrations.js";
@@ -11,8 +12,15 @@ import { PostgresHandoffStore } from "../src/store-postgres.js";
 
 import type { HandoffStoreAdapter } from "../src/store-adapter.js";
 
-// Postgres tests run only against a local, throwaway database named by
-// HANDOFF_PG_URL. Each suite uses its own schema and drops it afterwards.
+// Real Postgres tests run only against a local, throwaway database named by
+// HANDOFF_PG_URL, and are skipped when it is unset. Each run uses its own
+// schema and drops it afterwards.
+//
+// Separately, the same suite always runs against PGlite (Postgres compiled to
+// WebAssembly) in-process, behind a loopback socket. That checks the SQL,
+// migrations and lifecycle logic on every CI run. PGlite is one backend that
+// runs one transaction at a time, so it does not prove row-lock behaviour
+// between real backends; only the HANDOFF_PG_URL run does.
 const PG_URL = process.env.HANDOFF_PG_URL;
 const pgDescribe = PG_URL ? describe : describe.skip;
 
@@ -91,18 +99,18 @@ function contract(name: string, open: () => Promise<HandoffStoreAdapter>): void 
 
 contract("sqlite", async () => new HandoffStore(":memory:"));
 
-void pgDescribe("postgres adapter (local container only)", () => {
+function postgresSuite(name: string, url: () => string): void {
   const schemas: string[] = [];
   const newSchema = (): string => {
     const schema = `handoff_test_${randomBytes(6).toString("hex")}`;
     schemas.push(schema);
     return schema;
   };
-  const openPg = (schema: string): PostgresHandoffStore => new PostgresHandoffStore({ connectionString: PG_URL!, schema });
+  const openPg = (schema: string): PostgresHandoffStore => new PostgresHandoffStore({ connectionString: url(), schema });
 
   after(async () => {
     const pg = (await import("pg")).default;
-    const pool = new pg.Pool({ connectionString: PG_URL! });
+    const pool = new pg.Pool({ connectionString: url() });
     try {
       for (const schema of schemas) await pool.query(`DROP SCHEMA IF EXISTS ${schema} CASCADE`);
     } finally {
@@ -110,7 +118,7 @@ void pgDescribe("postgres adapter (local container only)", () => {
     }
   });
 
-  contract("postgres", async () => openPg(newSchema()));
+  contract(name, async () => openPg(newSchema()));
 
   void test("concurrent hosts migrate exactly once", async () => {
     const schema = newSchema();
@@ -118,7 +126,7 @@ void pgDescribe("postgres adapter (local container only)", () => {
     try {
       await Promise.all(hosts.map(async (host) => host.ready()));
       const pg = (await import("pg")).default;
-      const pool = new pg.Pool({ connectionString: PG_URL! });
+      const pool = new pg.Pool({ connectionString: url() });
       pool.on("connect", (client) => { client.query(`SET search_path TO ${schema}`).catch(() => undefined); });
       try {
         const versions = await pool.query<{ version: number }>("SELECT version FROM schema_migrations ORDER BY version");
@@ -179,5 +187,40 @@ void pgDescribe("postgres adapter (local container only)", () => {
       await hostA.close();
       await hostB.close();
     }
+  });
+}
+
+void pgDescribe("postgres adapter (local container only)", () => {
+  postgresSuite("postgres", () => PG_URL!);
+});
+
+void describe("postgres adapter on in-process PGlite (SQL and logic, not row locks)", () => {
+  let url = "";
+  let stop: (() => Promise<void>) | undefined;
+  before(async () => {
+    const { PGlite } = await import("@electric-sql/pglite");
+    const { PGLiteSocketServer } = await import("@electric-sql/pglite-socket");
+    const port = await new Promise<number>((resolve, reject) => {
+      const probe = createServer();
+      probe.once("error", reject);
+      probe.listen(0, "127.0.0.1", () => {
+        const address = probe.address();
+        probe.close(() => resolve(typeof address === "object" && address ? address.port : 0));
+      });
+    });
+    const db = await PGlite.create();
+    const server = new PGLiteSocketServer({ db, host: "127.0.0.1", port, maxConnections: 16 });
+    await server.start();
+    // Loopback-only throwaway database; PGlite accepts any credentials.
+    url = `postgres://postgres@127.0.0.1:${port}/postgres`;
+    stop = async () => {
+      await server.stop();
+      await db.close();
+    };
+  });
+  postgresSuite("pglite", () => url);
+  // Registered after the suite so its schema clean-up runs before the server stops.
+  after(async () => {
+    await stop?.();
   });
 });
