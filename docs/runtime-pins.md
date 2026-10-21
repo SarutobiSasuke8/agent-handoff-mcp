@@ -32,7 +32,7 @@ The `agent-handoff-mcp:board` image in the same compose file is built locally fr
 
 - Digests for floating tags such as `node:22-slim` change with every upstream rebuild. Re-resolve them on the day the pin is applied and update this file.
 - `engines.node` is a published compatibility range for npm users as well as a runtime pin. `22.13` is the documented minimum for `node:sqlite`. When gate d48fb4c7 is decided, pin the runtime in the Dockerfile and CI, and decide separately whether the published range should stay a range.
-- The workflow `node-version` values also float to the newest patch release: the `ci.yml` matrix and coverage job (`22.x`, `24.x`), `inspector.yml` (`22.x`), `mcp-eval.yml` (`22`) and `release.yml` (`24.x`). Rechecked on 2026-10-21. The pin-check script does not report them; they are part of the same gate.
+- The workflow `node-version` values also float to the newest patch release: the `ci.yml` matrix (`22.x`, `24.x`; `22.13.1` is exact) and coverage job (`22.x`), `inspector.yml` (`22.x`), `mcp-eval.yml` (`22`) and `release.yml` (`24.x`). Rechecked on 2026-10-21. The pin-check script does not report them; they are part of the same gate.
 - The `pin-check` job's own checkout step is pinned to a SHA, so it adds no new floating reference.
 
 ## Turning the check into a gate
