@@ -1,9 +1,11 @@
 import { McpServer } from "@modelcontextprotocol/server";
+import { performance } from "node:perf_hooks";
 import { z } from "zod";
 
 import { DomainError } from "./errors.js";
 import { defaultStatuses } from "./service.js";
 import { handoffStatusSchema, prioritySchema, sensitivitySchema } from "./types.js";
+import { operationalMetrics, type ToolName } from "./metrics.js";
 
 import type { AuthInfo, CallToolResult } from "@modelcontextprotocol/server";
 import type { HandoffService } from "./service.js";
@@ -37,14 +39,18 @@ function resolveAgentId(context: ToolContext, fixedAgentId?: string): string {
 }
 
 async function runTool(
+  name: ToolName,
   context: ToolContext,
   fixedAgentId: string | undefined,
   operation: (agentId: string) => Promise<Record<string, unknown>> | Record<string, unknown>,
 ): Promise<CallToolResult> {
+  const started = performance.now();
   try {
     return jsonResult(await operation(resolveAgentId(context, fixedAgentId)));
   } catch (error) {
     return errorResult(error);
+  } finally {
+    operationalMetrics.toolCall(name, performance.now() - started);
   }
 }
 
@@ -63,7 +69,7 @@ export function createHandoffMcpServer(service: HandoffService, fixedAgentId?: s
       inputSchema: z.strictObject({}),
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     },
-    async (_input, context) => runTool(context, fixedAgentId, (id) => service.whoami(id)),
+    async (_input, context) => runTool("handoff_whoami", context, fixedAgentId, (id) => service.whoami(id)),
   );
 
   server.registerTool(
@@ -86,7 +92,7 @@ export function createHandoffMcpServer(service: HandoffService, fixedAgentId?: s
       }),
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     },
-    async (input, context) => runTool(context, fixedAgentId, async (id) => ({
+    async (input, context) => runTool("handoff_send", context, fixedAgentId, async (id) => ({
       handoff: await service.send(id, {
         recipient: input.recipient,
         title: input.title,
@@ -114,7 +120,7 @@ export function createHandoffMcpServer(service: HandoffService, fixedAgentId?: s
       }),
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     },
-    async ({ statuses, limit }, context) => runTool(context, fixedAgentId, async (id) => ({
+    async ({ statuses, limit }, context) => runTool("handoff_inbox", context, fixedAgentId, async (id) => ({
       handoffs: await service.inbox(id, statuses ?? defaultStatuses(), limit),
     })),
   );
@@ -127,7 +133,7 @@ export function createHandoffMcpServer(service: HandoffService, fixedAgentId?: s
       inputSchema: z.strictObject({ handoff_id: z.uuid() }),
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     },
-    async ({ handoff_id }, context) => runTool(context, fixedAgentId, async (id) => service.get(id, handoff_id)),
+    async ({ handoff_id }, context) => runTool("handoff_get", context, fixedAgentId, async (id) => service.get(id, handoff_id)),
   );
 
   server.registerTool(
@@ -138,7 +144,7 @@ export function createHandoffMcpServer(service: HandoffService, fixedAgentId?: s
       inputSchema: z.strictObject({ handoff_id: z.uuid(), note: shortText.optional() }),
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     },
-    async ({ handoff_id, note }, context) => runTool(context, fixedAgentId, async (id) => ({
+    async ({ handoff_id, note }, context) => runTool("handoff_acknowledge", context, fixedAgentId, async (id) => ({
       handoff: await service.acknowledge(id, handoff_id, note),
     })),
   );
@@ -155,7 +161,7 @@ export function createHandoffMcpServer(service: HandoffService, fixedAgentId?: s
       }),
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     },
-    async ({ handoff_id, status, note }, context) => runTool(context, fixedAgentId, async (id) => ({
+    async ({ handoff_id, status, note }, context) => runTool("handoff_update_status", context, fixedAgentId, async (id) => ({
       handoff: await service.updateStatus(id, handoff_id, status, note),
     })),
   );

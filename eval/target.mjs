@@ -108,6 +108,11 @@ for (const seed of seeds) {
   );
   insertEvent.run(seed.eventId, seed.id, seed.at);
 }
+// Inspector CLI commands use separate sessions. Seed one accepted item only
+// for the status-transition fixture; the normal contract target is unchanged.
+if (process.argv.includes("--accept-second")) {
+  db.prepare("UPDATE handoffs SET status = 'accepted' WHERE id = ?").run("00000000-0000-4000-8000-000000000002");
+}
 db.close();
 
 function cleanUp() {

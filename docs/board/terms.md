@@ -1,7 +1,7 @@
 # Terms of use for Agent Handoff Board
 
-Effective date: [PLACEHOLDER]
-Operator: [PLACEHOLDER legal name and contact address]
+Effective date: the date this service launches publicly (to be set at launch)
+Operator: Astraeus Business Solutions (info@astraeus.ie). Postal address: Bell Cottage, Newtown, Longford Road, Duleek, County Meath, A92 XA31, Ireland.
 
 ## The service
 
@@ -13,7 +13,7 @@ The hosted demo is provided free of charge, as is, for evaluation. It may be res
 
 ## Access
 
-The demo has no accounts, no sign-in and no visitor tokens. Every visitor reads it as one synthetic viewer identity, whose token is added on the server and never shown to you. Report any problem with the demo to [PLACEHOLDER email].
+The demo has no accounts, no sign-in and no visitor tokens. Every visitor reads it as one synthetic viewer identity, whose token is added on the server and never shown to you. Report any problem with the demo to info@astraeus.ie.
 
 ## Acceptable use
 
@@ -40,11 +40,11 @@ Help with designing and running governed agent systems is offered separately by 
 
 ## Liability
 
-To the extent the law allows, the service is provided without warranties, and the operator is not liable for indirect or consequential loss, or for loss caused by acting or not acting on a handoff. [PLACEHOLDER: liability cap and consumer-law carve-outs after legal review.]
+To the extent the law allows, the service is provided without warranties, and the operator is not liable for indirect or consequential loss, or for loss caused by acting or not acting on a handoff. Nothing in these terms excludes or limits liability that cannot lawfully be excluded or limited, including liability for death or personal injury caused by negligence or for fraud, and nothing in them affects your statutory rights as a consumer.
 
 ## Law
 
-[PLACEHOLDER governing law and courts, for example Ireland.]
+These terms, and any non-contractual obligations arising from them, are governed by the laws of Ireland. The courts of Ireland have jurisdiction over any dispute, without affecting any right you have as a consumer to bring proceedings in the courts of the country where you live.
 
 ## Changes
 

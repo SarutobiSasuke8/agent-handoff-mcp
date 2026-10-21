@@ -5,6 +5,7 @@ import { DatabaseSync } from "node:sqlite";
 
 import { assertNoServers, recoveryPath, withRecoveryGuard } from "./recovery-lock.js";
 import { parseRegistry } from "./registry.js";
+import { CURRENT_SCHEMA_VERSION } from "./migrations.js";
 
 const MAX_BACKUP_BYTES = 128 * 1024 * 1024;
 const metadataTable = "handoff_recovery_metadata";
@@ -21,7 +22,7 @@ function syncFile(file: string): void {
 function validateDatabase(db: DatabaseSync): void {
   const objects = db.prepare("SELECT type, name FROM sqlite_schema WHERE name NOT LIKE 'sqlite_%'").all();
   if (objects.some((object) => object.type === "trigger" || object.type === "view" ||
-    (object.type === "table" && !["handoffs", "handoff_events", metadataTable].includes(String(object.name))))) {
+    (object.type === "table" && !["handoffs", "handoff_events", "schema_migrations", metadataTable].includes(String(object.name))))) {
     throw new Error("Unexpected objects in the backup database.");
   }
   const integrity = db.prepare("PRAGMA integrity_check").all();
@@ -44,6 +45,13 @@ function validateDatabase(db: DatabaseSync): void {
     return JSON.stringify(columns.map((column) => column.name)) === '["sender","idempotency_key"]';
   });
   if (!uniqueKey) throw new Error("Missing idempotency constraint.");
+  const hasMigrations = db.prepare("SELECT name FROM sqlite_schema WHERE type = 'table' AND name = 'schema_migrations'").get();
+  if (hasMigrations) {
+    const versions = db.prepare("SELECT version FROM schema_migrations ORDER BY version").all() as unknown as { version: number }[];
+    if (versions.some((row, index) => row.version !== index + 1) || versions.some((row) => row.version > CURRENT_SCHEMA_VERSION)) {
+      throw new Error("Unsupported backup schema version.");
+    }
+  }
 }
 
 function inspectBackup(file: string): string {

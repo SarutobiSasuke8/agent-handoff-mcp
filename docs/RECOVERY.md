@@ -12,6 +12,11 @@ agent-handoff-mcp backup ./backups/handoff-2026-10-08.sqlite --db ./data/handoff
 
 SQLite `VACUUM INTO` takes a consistent snapshot including committed WAL contents, without stopping HTTP or stdio. It does not copy the live database file directly. The backup is a self-contained SQLite file with recovery metadata containing the validated registry and its SHA-256 digest. Integrity, foreign keys, runtime columns and the idempotency constraint are checked before the output is accepted. Recovery refuses unexpected tables, views and triggers. The supported backup limit is 128 MiB.
 
+The snapshot also carries the store's `schema_migrations` history. Startup
+applies missing migrations in order and refuses a database from a newer
+binary. Existing unversioned stores are recognised at their observed schema
+version; keep a backup before upgrading.
+
 Pause registry provisioning changes during the command. The registry is checked before and after the database snapshot; an observed change aborts the backup. These are separate storage systems, so there is no joint database/registry transaction. Server handoff traffic can continue. The brief startup/recovery guard prevents another CLI recovery or server startup racing the snapshot; it does not block handoff requests to running servers.
 
 Choose a cadence from the amount of state you can afford to lose: daily for light use, more often for active queues, and before maintenance. Keep several dated copies and a separately protected copy off the machine. Verify a checksum through your backup system and practise a fresh-directory restore periodically. SHA-256 and SQLite integrity detect corruption; they do not authenticate a backup supplied by an untrusted party.
