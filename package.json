@@ -81,7 +81,8 @@
     "prepublishOnly": "npm run check && npm run test:e2e && node scripts/verify-pack.mjs && npm run check:registry",
     "prepare": "npm run build:package",
     "build:package": "tsc -p tsconfig.package.json",
-    "conformance": "npm run build && node tools/conformance.mjs"
+    "conformance": "npm run build && node tools/conformance.mjs",
+    "test:auth-negative": "npm run build && node tools/auth-negative.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/express": "2.0.2",
