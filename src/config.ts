@@ -7,6 +7,7 @@ const envSchema = z.object({
   HANDOFF_MCP_PORT: z.coerce.number().int().min(1).max(65535).default(3220),
   HANDOFF_MCP_DB: z.string().default("./data/handoffs.sqlite"),
   HANDOFF_MCP_REGISTRY: z.string().default("./config/agents.yaml"),
+  HANDOFF_MCP_NOTIFICATION_FILE: z.string().min(1).optional(),
   HANDOFF_MCP_ALLOWED_HOSTS: z.string().optional(),
   HANDOFF_MCP_ALLOWED_ORIGINS: z.string().optional(),
   HANDOFF_MCP_MAX_MESSAGE_BYTES: z.coerce.number().int().min(1024).max(262_144).default(32_768),
@@ -28,6 +29,7 @@ export interface AppConfig {
   port: number;
   databaseFile: string;
   registryFile: string;
+  notificationFile?: string;
   allowedHosts?: string[];
   allowedOrigins?: string[];
   maxMessageBytes: number;
@@ -47,6 +49,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     port: parsed.HANDOFF_MCP_PORT,
     databaseFile: path.resolve(parsed.HANDOFF_MCP_DB),
     registryFile: path.resolve(parsed.HANDOFF_MCP_REGISTRY),
+    ...(parsed.HANDOFF_MCP_NOTIFICATION_FILE ? { notificationFile: path.resolve(parsed.HANDOFF_MCP_NOTIFICATION_FILE) } : {}),
     ...(allowedHosts ? { allowedHosts } : {}),
     ...(allowedOrigins ? { allowedOrigins } : {}),
     maxMessageBytes: parsed.HANDOFF_MCP_MAX_MESSAGE_BYTES,

@@ -9,6 +9,7 @@ import { operationalMetrics } from "./metrics.js";
 import { migrateStore } from "./migrations.js";
 
 import type { CreateHandoffInput, Handoff, HandoffEvent, HandoffStatus } from "./types.js";
+import type { NotificationSink } from "./notifications.js";
 
 interface HandoffRow {
   id: string;
@@ -146,7 +147,7 @@ export class HandoffStore {
     }
   }
 
-  public create(sender: string, input: CreateHandoffInput, maxDepth: number): Handoff {
+  public create(sender: string, input: CreateHandoffInput, maxDepth: number, notificationSink?: NotificationSink): Handoff {
     const hash = payloadHash(input);
     this.db.exec("BEGIN IMMEDIATE");
     try {
@@ -203,6 +204,12 @@ export class HandoffStore {
       const created = this.get(id);
       this.db.exec("COMMIT");
       operationalMetrics.handoffCreated();
+      try {
+        notificationSink?.record(created);
+      } catch {
+        // The handoff is committed. Notification failure must not turn it into a failed send.
+        process.stderr.write("Handoff notification write failed.\n");
+      }
       return created;
     } catch (error) {
       this.db.exec("ROLLBACK");
