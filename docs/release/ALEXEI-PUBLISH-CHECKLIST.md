@@ -13,7 +13,7 @@ Run the commands in Git Bash from a clean checkout of the repository.
 | 1 | Merge #68 (Zod 4.6.7, `expires_at` needs seconds) | 3 min | `gh pr merge 68 --squash` | `Squashed and merged pull request #68`. The `ci-ok` check on main goes green. |
 | 2 | Close Dependabot #64, superseded by #68 | 1 min | `gh pr close 64 --comment "Superseded by #68"` | `Closed pull request #64` |
 | 3 | Bring this PR up to date and date-stamp the changelog | 5 min + 10 min CI | see block A | `ci-ok` green on this PR |
-| 4 | Merge this PR | 2 min | `gh pr merge PRNUM --squash` | `Squashed and merged pull request #PRNUM` |
+| 4 | Merge this PR | 2 min | `gh pr merge 69 --squash` | `Squashed and merged pull request #69` |
 | 5 | Register the npm trusted publisher (gate 6afcbe2d) | 10 min | npmjs.com, see block B | Package settings list GitHub Actions, `SarutobiSasuke8/agent-handoff-mcp`, `release.yml`, environment blank |
 | 6 | Hosted release dry run on main | 2 min + 8 min CI | `gh workflow run release.yml --ref main -f dry_run=true` then `gh run watch` | Every step green; the last log line is `+ @sarutobi-sasuke/agent-handoff-mcp@0.1.0` and nothing is published |
 | 7 | Tag v0.1.0 on the commit from step 4 | 3 min | see block C | `* [new tag] v0.1.0 -> v0.1.0` |
@@ -27,13 +27,13 @@ Run the commands in Git Bash from a clean checkout of the repository.
 
 ```bash
 git fetch origin
-gh pr checkout PRNUM
+gh pr checkout 69
 git merge origin/main -m "Merge main after #68"
 # Replace YYYY-MM-DD with the day you will tag.
 sed -i 's/^## \[0.1.0\] - unreleased/## [0.1.0] - YYYY-MM-DD/' CHANGELOG.md
 git commit -am "Date-stamp CHANGELOG for v0.1.0"
 git push
-gh pr checks PRNUM --watch
+gh pr checks 69 --watch
 ```
 
 Optional in the same commit: the `0.1.0 is the first release candidate`
