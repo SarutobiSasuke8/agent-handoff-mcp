@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Nothing yet beyond 0.1.0.
 
-## [0.1.0] - unreleased
+## [0.1.0] - 2026-10-23
 
 Release candidate for the first npm publication. The date is set when the
 `v0.1.0` tag is pushed; see `RELEASING.md`.
