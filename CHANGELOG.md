@@ -14,6 +14,15 @@ Nothing yet beyond 0.1.0.
 Release candidate for the first npm publication. The date is set when the
 `v0.1.0` tag is pushed; see `RELEASING.md`.
 
+### Zod 4.6.7 and registry expiry format, 2026-10-22
+
+- Update `zod` to 4.6.7 and regenerate `schema/agent-registry.schema.v1.json` (#68).
+- Compatibility change: `expires_at` in the registry, and the `--expires` value
+  for `issue` and `rotate`, now needs seconds. `2026-10-22T12:34Z` and
+  `2026-10-22T12:34+01:00` were accepted before and are now rejected; write
+  `2026-10-22T12:34:00Z`. Fractional seconds and timezone offsets are still
+  accepted. The published JSON Schema pattern has the same change.
+
 ### Release tooling, 2026-10-20
 
 - Add a dry-run path to the release workflow: a manual dispatch defaults to
@@ -94,9 +103,13 @@ candidate on `main`.
   default `agent-handoff-mcp` dispatcher binary and `agent-handoff-http`,
   `agent-handoff-stdio`, `agent-handoff-token`, and `agent-handoff-validate`
   aliases.
-- The tarball ships the documentation and configuration the README references:
-  `docs/`, `schema/`, `.env.example`, `config/agents.example.yaml`,
-  `SECURITY.md`, `CHANGELOG.md`, `ROADMAP.md`, and `CONTRIBUTING.md`.
+- The tarball ships an explicit allowlist of 55 files: the compiled `dist/src/`
+  entry points and type declarations, `scripts/generate-token.mjs`,
+  `config/agents.example.yaml`, `schema/agent-registry.schema.v1.json`, five
+  documents from `docs/` (architecture, protocol, quickstart, recovery,
+  conformance), `README.md`, `SECURITY.md`, `CHANGELOG.md`, `ROADMAP.md`,
+  `CONTRIBUTING.md` and `LICENSE`. Tests, `.env` files, local data and release
+  evidence are excluded, and `scripts/verify-pack.mjs` enforces this.
 - Requires Node 22.13 or later.
 
 [Unreleased]: https://github.com/SarutobiSasuke8/agent-handoff-mcp/compare/v0.1.0...HEAD
