@@ -7,10 +7,12 @@ import { DomainError } from "./errors.js";
 import { registerServer } from "./recovery-lock.js";
 import { operationalMetrics } from "./metrics.js";
 import { migrateStore } from "./migrations.js";
+import { allowedTransition } from "./store-adapter.js";
 
+import type { HandoffStoreAdapter } from "./store-adapter.js";
 import type { CreateHandoffInput, Handoff, HandoffEvent, HandoffStatus } from "./types.js";
 
-interface HandoffRow {
+export interface HandoffRow {
   id: string;
   thread_id: string;
   parent_id: string | null;
@@ -32,7 +34,7 @@ interface HandoffRow {
   payload_hash: string | null;
 }
 
-interface EventRow {
+export interface EventRow {
   id: string;
   handoff_id: string;
   actor: string;
@@ -48,7 +50,7 @@ interface EventRow {
  * reused (sender, idempotency_key) pair can be verified as a true retry of the
  * same payload rather than silently returning an unrelated original handoff.
  */
-function payloadHash(input: CreateHandoffInput): string {
+export function payloadHash(input: CreateHandoffInput): string {
   const canonical = JSON.stringify({
     recipient: input.recipient,
     title: input.title,
@@ -64,7 +66,7 @@ function payloadHash(input: CreateHandoffInput): string {
   return createHash("sha256").update(canonical, "utf8").digest("hex");
 }
 
-function rowPayloadHash(row: HandoffRow): string {
+export function rowPayloadHash(row: HandoffRow): string {
   // Rows written before the payload_hash column existed carry NULL; recompute
   // the fingerprint from the stored fields so legacy rows get the same guard.
   if (row.payload_hash) return row.payload_hash;
@@ -90,7 +92,7 @@ function parseStringArray(value: string): string[] {
   return parsed;
 }
 
-function toHandoff(row: HandoffRow): Handoff {
+export function toHandoff(row: HandoffRow): Handoff {
   return {
     id: row.id,
     threadId: row.thread_id,
@@ -113,7 +115,7 @@ function toHandoff(row: HandoffRow): Handoff {
   };
 }
 
-function toEvent(row: EventRow): HandoffEvent {
+export function toEvent(row: EventRow): HandoffEvent {
   return {
     id: row.id,
     handoffId: row.handoff_id,
@@ -126,7 +128,8 @@ function toEvent(row: EventRow): HandoffEvent {
   };
 }
 
-export class HandoffStore {
+/** SQLite adapter: the default store. Synchronous; one file per deployment. */
+export class HandoffStore implements HandoffStoreAdapter {
   private readonly db: DatabaseSync;
   private readonly releaseServer: () => void;
   private closed = false;
@@ -144,6 +147,10 @@ export class HandoffStore {
       try { opened?.close(); } finally { this.releaseServer(); }
       throw error;
     }
+  }
+
+  public ready(): void {
+    // Opened and migrated in the constructor.
   }
 
   public create(sender: string, input: CreateHandoffInput, maxDepth: number): Handoff {
@@ -272,12 +279,7 @@ export class HandoffStore {
   }
 
   private allowedTransition(handoff: Handoff, actor: string, next: Exclude<HandoffStatus, "queued">): boolean {
-    if (next === "cancelled") return actor === handoff.sender && handoff.status === "queued";
-    if (actor !== handoff.recipient) return false;
-    if (next === "accepted") return handoff.status === "queued" || handoff.status === "blocked";
-    if (next === "blocked") return handoff.status === "queued" || handoff.status === "accepted";
-    if (next === "completed") return handoff.status === "accepted" || handoff.status === "blocked";
-    return false;
+    return allowedTransition(handoff, actor, next);
   }
 
   private insertEvent(
