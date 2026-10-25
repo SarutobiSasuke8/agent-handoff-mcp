@@ -210,6 +210,38 @@ void test("HTTP rejects rotated, expired, disabled, and unknown tokens at the au
   });
 });
 
+void test("HTTP rejects access_token in a JSON or form body with invalid_request", async (t) => {
+  const fixture = await createFixture(baseAgents());
+  const harness = await startHttpHarness(fixture);
+  t.after(async () => {
+    await harness.close();
+    await fixture.dispose();
+  });
+
+  const token = fixture.tokens.get("alpha")!.token;
+  const accept = "application/json, text/event-stream";
+  const bodies: [string, string][] = [
+    ["application/json", JSON.stringify({ jsonrpc: "2.0", id: 1, method: "ping", access_token: token })],
+    ["application/x-www-form-urlencoded", new URLSearchParams({ access_token: token }).toString()],
+  ];
+  for (const [contentType, body] of bodies) {
+    for (const withHeader of [true, false]) {
+      const response = await fetch(harness.url, {
+        method: "POST",
+        headers: {
+          "Content-Type": contentType,
+          Accept: accept,
+          ...(withHeader ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body,
+      });
+      assert.equal(response.status, 400, `${contentType} header=${withHeader}`);
+      assert.match(response.headers.get("www-authenticate") ?? "", /^Bearer error="invalid_request"/u);
+      assert.equal(((await response.json()) as { error?: string }).error, "invalid_request");
+    }
+  }
+});
+
 void test("handoffs persist across a server restart on both transports", async (t) => {
   const fixture = await createFixture(baseAgents());
   t.after(async () => fixture.dispose());
