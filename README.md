@@ -228,7 +228,11 @@ separate operator actions. Builds omit source maps and their JavaScript links.
 
 ## Scope boundary
 
-This project is a coordination primitive, not a general task platform. Shared task boards, decisions, broadcasts, presence, leases, notifications, context promotion, and remote dispatch belong behind future optional modules. The six-tool handoff surface remains the stable core.
+This project is a coordination primitive, not a general task platform. Shared task boards, decisions, broadcasts, presence, leases, context promotion, and remote dispatch belong behind future optional modules. The six-tool handoff surface remains the stable core.
+
+### Optional inbox notifications
+
+Set `HANDOFF_MCP_NOTIFICATION_FILE` to an absolute path to append a local JSONL notice when a new handoff lands. Notifications are off by default. Each line contains only `handoffId`, `senderId`, `recipientId`, `status` and `timestamp`. It contains no title, body, attachments or other handoff content. An idempotent retry does not emit a second notice. Protect the file as operational metadata; it reveals agent identities and handoff timing. A notification write failure is logged without handoff content and does not undo the committed handoff.
 
 ## License
 
