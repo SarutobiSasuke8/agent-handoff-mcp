@@ -152,29 +152,30 @@ on `127.0.0.1`, with a random port and freshly generated fixture credentials.
 It accepts no remote endpoint or stored-token override. It runs every probe,
 prints only names and status codes, writes sanitised results under ignored
 `release-evidence/auth-negative/results.json`, and exits **1** if any expected
-response is missing. It does not change runtime auth or CI. A successful
+response is missing. It does not change CI. A successful
 header-authenticated tools/list control guards against a broken fixture.
 
 The numbered cases use [RFC 6750 sections 2 and 3.1](https://www.rfc-editor.org/rfc/rfc6750.html#section-3.1)
 for bearer error responses; they are a focused request-shape check, not a
 claim of full MCP/OAuth conformance.
 
-| Case | Expected response | First observation on 22 October 2026 |
+| Case | Expected response | Observation (first run 22 October, fix 25 October 2026) |
 |---|---|---|
 | 1: no header | 401 plus Bearer challenge | Pass |
 | 2: garbage token | 401 plus `error="invalid_token"` challenge | Pass |
 | 3: expired static token | 401 plus `error="invalid_token"` challenge | Pass; registry expiry is already supported |
 | 5: valid fixture token only in query | 400/401 plus Bearer challenge, never success | Pass: 401 |
-| 6: valid header plus `access_token` in JSON body | 400 plus OAuth `invalid_request` | **Finding:** 400 JSON-RPC rejection, no OAuth `invalid_request` |
-| 6: valid header plus form-body token | 400 plus OAuth `invalid_request` | **Finding:** 415 unsupported content type |
+| 6: valid header plus `access_token` in JSON body | 400 plus OAuth `invalid_request` | Pass since 25 October: 400 plus `invalid_request` challenge (was a 400 JSON-RPC rejection) |
+| 6: valid header plus form-body token | 400 plus OAuth `invalid_request` | Pass since 25 October: 400 plus `invalid_request` challenge (was a 415) |
 | 7: wrong scheme, missing space, empty Bearer | 400 `invalid_request` or 401 plus Bearer challenge | Pass: 401 for all 3 |
 
-Case 6 remains an unmet response-contract expectation. Neither request
-succeeds, but neither produces the requested OAuth error. The runner keeps
-these assertions strict; it does not turn the observed responses into a
-passing baseline. Runtime response/middleware fixes are outside this
-test-only change. The form probe uses RFC 6750's form-encoded `access_token`; the JSON
-probe separately checks the same field on an otherwise valid MCP request.
+Case 6 was a finding on the first run. Since 25 October `/mcp` rejects any
+JSON or form body that carries `access_token`, with or without a header, with
+HTTP 400 and a Bearer `error="invalid_request"` challenge, before the token is
+checked. Form bodies are parsed (16 KB cap) only to find that field; MCP
+requests must still be JSON. The form probe uses RFC 6750's form-encoded
+`access_token`; the JSON probe separately checks the same field on an
+otherwise valid MCP request.
 
 Cases **4, 8-12 are N/A to this static-token profile today**: no JWT audience,
 issuer, per-token OAuth scope hierarchy or Protected Resource Metadata is
