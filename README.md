@@ -144,6 +144,54 @@ Failures are never silently baselined or repaired in the runner. See
 [the first-run findings](docs/CONFORMANCE-2026-10-21.md) before proposing
 this as a release gate. This command does not publish or modify CI.
 
+## Bearer request negative tests
+
+Run `npm run test:auth-negative` after `npm ci` in a source checkout. This
+dependency-free runner uses the existing disposable registry/SQLite harness
+on `127.0.0.1`, with a random port and freshly generated fixture credentials.
+It accepts no remote endpoint or stored-token override. It runs every probe,
+prints only names and status codes, writes sanitised results under ignored
+`release-evidence/auth-negative/results.json`, and exits **1** if any expected
+response is missing. It does not change CI. A successful
+header-authenticated tools/list control guards against a broken fixture.
+
+The numbered cases use [RFC 6750 sections 2 and 3.1](https://www.rfc-editor.org/rfc/rfc6750.html#section-3.1)
+for bearer error responses; they are a focused request-shape check, not a
+claim of full MCP/OAuth conformance.
+
+| Case | Expected response | Observation (first run 22 October, fix 25 October 2026) |
+|---|---|---|
+| 1: no header | 401 plus Bearer challenge | Pass |
+| 2: garbage token | 401 plus `error="invalid_token"` challenge | Pass |
+| 3: expired static token | 401 plus `error="invalid_token"` challenge | Pass; registry expiry is already supported |
+| 5: valid fixture token only in query | 400/401 plus Bearer challenge, never success | Pass: 401 |
+| 6: valid header plus `access_token` in JSON body | 400 plus OAuth `invalid_request` | Pass since 25 October: 400 plus `invalid_request` challenge (was a 400 JSON-RPC rejection) |
+| 6: valid header plus form-body token | 400 plus OAuth `invalid_request` | Pass since 25 October: 400 plus `invalid_request` challenge (was a 415) |
+| 7: wrong scheme, missing space, empty Bearer | 400 `invalid_request` or 401 plus Bearer challenge | Pass: 401 for all 3 |
+
+Case 6 was a finding on the first run. Since 25 October `/mcp` rejects any
+JSON or form body that carries `access_token`, with or without a header, with
+HTTP 400 and a Bearer `error="invalid_request"` challenge, before the token is
+checked. Form bodies are parsed (16 KB cap) only to find that field; MCP
+requests must still be JSON. The form probe uses RFC 6750's form-encoded
+`access_token`; the JSON probe separately checks the same field on an
+otherwise valid MCP request.
+
+Cases **4, 8-12 are N/A to this static-token profile today**: no JWT audience,
+issuer, per-token OAuth scope hierarchy or Protected Resource Metadata is
+implemented. Revisit them with an OAuth resource-server migration; N/A is
+not evidence of compliance. Unknown tokens still fail even though an issuer
+claim is not evaluated. Case **3 is not N/A**: static registry credentials
+already have `expires_at`, and this runner and existing e2e tests exercise
+expiry. Existing rotation, disabled-token and handoff authorisation tests
+also remain in place.
+
+For external conformance tooling, the package names are `mcp-spec-check` and
+`@modelcontextprotocol/conformance`; the existing pinned official framework
+command above is unchanged. This runner installs neither package and adds
+no dependency. Proposed CI wiring belongs in the PR description until the
+response findings are resolved.
+
 ## Operational metrics
 
 Set `HANDOFF_MCP_METRICS=1` to record in-process counters for handoffs
@@ -180,7 +228,11 @@ separate operator actions. Builds omit source maps and their JavaScript links.
 
 ## Scope boundary
 
-This project is a coordination primitive, not a general task platform. Shared task boards, decisions, broadcasts, presence, leases, notifications, context promotion, and remote dispatch belong behind future optional modules. The six-tool handoff surface remains the stable core.
+This project is a coordination primitive, not a general task platform. Shared task boards, decisions, broadcasts, presence, leases, context promotion, and remote dispatch belong behind future optional modules. The six-tool handoff surface remains the stable core.
+
+### Optional inbox notifications
+
+Set `HANDOFF_MCP_NOTIFICATION_FILE` to an absolute path to append a local JSONL notice when a new handoff lands. Notifications are off by default. Each line contains only `handoffId`, `senderId`, `recipientId`, `status` and `timestamp`. It contains no title, body, attachments or other handoff content. An idempotent retry does not emit a second notice. Protect the file as operational metadata; it reveals agent identities and handoff timing. A notification write failure is logged without handoff content and does not undo the committed handoff.
 
 ## License
 

@@ -1,5 +1,6 @@
 import { createMcpExpressApp, requireBearerAuth } from "@modelcontextprotocol/express";
 import { NodeStreamableHTTPServerTransport } from "@modelcontextprotocol/node";
+import express from "express";
 import { rateLimit } from "express-rate-limit";
 import helmet from "helmet";
 
@@ -7,7 +8,7 @@ import { RegistryTokenVerifier } from "./auth.js";
 import { createRuntime } from "./runtime.js";
 import { createHandoffMcpServer } from "./server.js";
 
-import type { ErrorRequestHandler, Express } from "express";
+import type { ErrorRequestHandler, Express, RequestHandler } from "express";
 import type { AppConfig } from "./config.js";
 import type { AgentRegistry } from "./registry.js";
 import type { HandoffService } from "./service.js";
@@ -59,9 +60,27 @@ export async function buildHttpApp(config: AppConfig): Promise<HttpApp> {
     response.status(policy.status === "ok" ? 200 : 503).json({ status: policy.status, policy });
   });
 
+  // RFC 6750 section 2: credentials go in the Authorization header only. A
+  // request that also (or only) carries access_token in a JSON or form body is
+  // rejected with invalid_request before any token check. Form bodies are
+  // parsed here solely to find that field; MCP itself still requires JSON.
+  const rejectBodyCredentials: RequestHandler = (request, response, next) => {
+    const body: unknown = request.body;
+    if (body && typeof body === "object" && Object.hasOwn(body, "access_token")) {
+      response
+        .status(400)
+        .set("WWW-Authenticate", 'Bearer error="invalid_request", error_description="Send the bearer token in the Authorization header only"')
+        .json({ error: "invalid_request", error_description: "Send the bearer token in the Authorization header only" });
+      return;
+    }
+    next();
+  };
+
   app.all(
     "/mcp",
     limiter,
+    express.urlencoded({ extended: false, limit: "16kb" }),
+    rejectBodyCredentials,
     requireBearerAuth({ verifier, requiredScopes: ["handoff"] }),
     async (request, response) => {
       // Stateless Streamable HTTP. Since SDK 2.3.0 a stateless transport serves

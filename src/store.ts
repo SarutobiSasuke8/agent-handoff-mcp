@@ -11,6 +11,7 @@ import { allowedTransition } from "./store-adapter.js";
 
 import type { HandoffStoreAdapter } from "./store-adapter.js";
 import type { CreateHandoffInput, Handoff, HandoffEvent, HandoffStatus } from "./types.js";
+import type { NotificationSink } from "./notifications.js";
 
 export interface HandoffRow {
   id: string;
@@ -153,7 +154,7 @@ export class HandoffStore implements HandoffStoreAdapter {
     // Opened and migrated in the constructor.
   }
 
-  public create(sender: string, input: CreateHandoffInput, maxDepth: number): Handoff {
+  public create(sender: string, input: CreateHandoffInput, maxDepth: number, notificationSink?: NotificationSink): Handoff {
     const hash = payloadHash(input);
     this.db.exec("BEGIN IMMEDIATE");
     try {
@@ -210,6 +211,12 @@ export class HandoffStore implements HandoffStoreAdapter {
       const created = this.get(id);
       this.db.exec("COMMIT");
       operationalMetrics.handoffCreated();
+      try {
+        notificationSink?.record(created);
+      } catch {
+        // The handoff is committed. Notification failure must not turn it into a failed send.
+        process.stderr.write("Handoff notification write failed.\n");
+      }
       return created;
     } catch (error) {
       this.db.exec("ROLLBACK");

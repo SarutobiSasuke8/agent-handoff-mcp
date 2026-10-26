@@ -5,11 +5,13 @@ import { permitsSensitivity } from "./registry.js";
 
 import type { AgentRegistry, PolicySnapshot } from "./registry.js";
 import type { HandoffStoreAdapter } from "./store-adapter.js";
+import type { NotificationSink } from "./notifications.js";
 import type { AgentDefinition, CreateHandoffInput, Handoff, HandoffStatus } from "./types.js";
 
 export interface ServiceOptions {
   maxMessageBytes: number;
   maxHandoffDepth: number;
+  notificationSink?: NotificationSink;
 }
 
 interface Principal {
@@ -50,7 +52,7 @@ export class HandoffService {
       const parent = await this.store.find(input.parentId);
       if (!parent || !this.canAccess(principal, parent)) throw inaccessible(input.parentId);
     }
-    return await this.store.create(agentId, input, this.options.maxHandoffDepth);
+    return await this.store.create(agentId, input, this.options.maxHandoffDepth, this.options.notificationSink);
   }
 
   public async inbox(agentId: string, statuses: HandoffStatus[], limit: number): Promise<Handoff[]> {

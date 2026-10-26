@@ -10,6 +10,7 @@ import { createStore } from "../src/runtime.js";
 import { HandoffStore } from "../src/store.js";
 import { PostgresHandoffStore } from "../src/store-postgres.js";
 
+import type { NotificationSink } from "../src/notifications.js";
 import type { HandoffStoreAdapter } from "../src/store-adapter.js";
 
 // Real Postgres tests run only against a local, throwaway database named by
@@ -91,6 +92,24 @@ function contract(name: string, open: () => Promise<HandoffStoreAdapter>): void 
       await assert.rejects(async () => store.create("claude", { ...input, parentId: child.id }, 1), /Maximum handoff depth/u);
       await assert.rejects(async () => store.get("missing"), /was not found/u);
       assert.equal(await store.find("missing"), undefined);
+    } finally {
+      await store.close();
+    }
+  });
+
+  void test(`${name}: notification sink sees new handoffs once and cannot fail a send`, async () => {
+    const store = await open();
+    try {
+      await store.ready();
+      const recorded: string[] = [];
+      const sink: NotificationSink = { record: (handoff) => { recorded.push(handoff.id); } };
+      const first = await store.create("claude", { ...input, idempotencyKey: "notify-1" }, 8, sink);
+      await store.create("claude", { ...input, idempotencyKey: "notify-1" }, 8, sink);
+      assert.deepEqual(recorded, [first.id]);
+
+      const failing: NotificationSink = { record: () => { throw new Error("disk full"); } };
+      const second = await store.create("claude", { ...input, idempotencyKey: "notify-2" }, 8, failing);
+      assert.equal((await store.get(second.id)).status, "queued");
     } finally {
       await store.close();
     }

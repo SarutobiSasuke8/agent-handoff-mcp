@@ -8,6 +8,7 @@ import { payloadHash, rowPayloadHash, toEvent, toHandoff } from "./store.js";
 
 import type pgModule from "pg";
 import type { Pool, PoolClient } from "pg";
+import type { NotificationSink } from "./notifications.js";
 import type { HandoffStoreAdapter } from "./store-adapter.js";
 import type { EventRow, HandoffRow } from "./store.js";
 import type { CreateHandoffInput, Handoff, HandoffEvent, HandoffStatus } from "./types.js";
@@ -78,7 +79,12 @@ export class PostgresHandoffStore implements HandoffStoreAdapter {
     await this.opening;
   }
 
-  public async create(sender: string, input: CreateHandoffInput, maxDepth: number): Promise<Handoff> {
+  public async create(
+    sender: string,
+    input: CreateHandoffInput,
+    maxDepth: number,
+    notificationSink?: NotificationSink,
+  ): Promise<Handoff> {
     const hash = payloadHash(input);
     return this.inTransaction(async (client) => {
       if (input.idempotencyKey) {
@@ -134,7 +140,16 @@ export class PostgresHandoffStore implements HandoffStoreAdapter {
       }
       await this.insertEvent(client, id, sender, "created", undefined, "queued", undefined, now);
       return { value: toHandoff(row), created: true };
-    }, (result) => { if (result.created) operationalMetrics.handoffCreated(); });
+    }, (result) => {
+      if (!result.created) return;
+      operationalMetrics.handoffCreated();
+      try {
+        notificationSink?.record(result.value);
+      } catch {
+        // The handoff is committed. Notification failure must not turn it into a failed send.
+        process.stderr.write("Handoff notification write failed.\n");
+      }
+    });
   }
 
   public async get(id: string): Promise<Handoff> {

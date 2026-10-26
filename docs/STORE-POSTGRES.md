@@ -41,7 +41,7 @@ type MaybePromise<T> = T | Promise<T>;
 
 interface HandoffStoreAdapter {
   ready(): MaybePromise<void>;
-  create(sender: string, input: CreateHandoffInput, maxDepth: number): MaybePromise<Handoff>;
+  create(sender: string, input: CreateHandoffInput, maxDepth: number, notificationSink?: NotificationSink): MaybePromise<Handoff>;
   get(id: string): MaybePromise<Handoff>;
   find(id: string): MaybePromise<Handoff | undefined>;
   inbox(recipient: string, statuses: HandoffStatus[], limit: number): MaybePromise<Handoff[]>;
@@ -67,6 +67,10 @@ Design choices:
   adapters.
 - **Same errors.** Both adapters raise the same `DomainError` messages, so MCP
   tool output does not depend on the store.
+- **Notifications.** When `HANDOFF_MCP_NOTIFICATION_FILE` is set, the service
+  passes its `NotificationSink` to `create`. Both adapters record one
+  metadata-only notice after a new handoff commits, none for an idempotent
+  replay, and swallow sink errors so a failed notice never fails the send.
 - `createStore(config)` in `runtime.ts` picks the adapter.
 
 The interface is the persistence contract only. Authorization, disclosure
@@ -186,6 +190,7 @@ histories.
 | Event written in the same transaction as the change | yes | yes |
 | Rejected transition writes no event | yes | yes |
 | Idempotent replay writes no event | yes | yes |
+| One notice per new handoff, none on replay (opt-in sink) | yes | yes |
 | Event fields (`id`, `actor`, `event_type`, `from_status`, `to_status`, `note`, `created_at`) | same | same |
 | Ordering | `created_at, rowid` | `created_at, seq` |
 | Updates and deletes of events by the server | none | none |

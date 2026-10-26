@@ -9,6 +9,7 @@ const envSchema = z.object({
   HANDOFF_STORE: z.enum(["sqlite", "postgres"]).default("sqlite"),
   HANDOFF_PG_URL: z.string().min(1).optional(),
   HANDOFF_MCP_REGISTRY: z.string().default("./config/agents.yaml"),
+  HANDOFF_MCP_NOTIFICATION_FILE: z.string().min(1).optional(),
   HANDOFF_MCP_ALLOWED_HOSTS: z.string().optional(),
   HANDOFF_MCP_ALLOWED_ORIGINS: z.string().optional(),
   HANDOFF_MCP_MAX_MESSAGE_BYTES: z.coerce.number().int().min(1024).max(262_144).default(32_768),
@@ -34,6 +35,7 @@ export interface AppConfig {
   /** Postgres connection string. Never logged. */
   postgresUrl?: string;
   registryFile: string;
+  notificationFile?: string;
   allowedHosts?: string[];
   allowedOrigins?: string[];
   maxMessageBytes: number;
@@ -58,6 +60,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     storeKind: parsed.HANDOFF_STORE,
     ...(parsed.HANDOFF_STORE === "postgres" && parsed.HANDOFF_PG_URL ? { postgresUrl: parsed.HANDOFF_PG_URL } : {}),
     registryFile: path.resolve(parsed.HANDOFF_MCP_REGISTRY),
+    ...(parsed.HANDOFF_MCP_NOTIFICATION_FILE ? { notificationFile: path.resolve(parsed.HANDOFF_MCP_NOTIFICATION_FILE) } : {}),
     ...(allowedHosts ? { allowedHosts } : {}),
     ...(allowedOrigins ? { allowedOrigins } : {}),
     maxMessageBytes: parsed.HANDOFF_MCP_MAX_MESSAGE_BYTES,

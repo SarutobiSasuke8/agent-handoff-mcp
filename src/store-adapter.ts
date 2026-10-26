@@ -1,3 +1,4 @@
+import type { NotificationSink } from "./notifications.js";
 import type { CreateHandoffInput, Handoff, HandoffEvent, HandoffStatus } from "./types.js";
 
 /** A value an adapter may return directly (SQLite) or asynchronously (Postgres). */
@@ -17,7 +18,17 @@ export type MaybePromise<T> = T | Promise<T>;
 export interface HandoffStoreAdapter {
   /** Resolves once the store is open and migrated. Errors surface here at startup. */
   ready(): MaybePromise<void>;
-  create(sender: string, input: CreateHandoffInput, maxDepth: number): MaybePromise<Handoff>;
+  /**
+   * Creates a handoff, or returns the existing one for an identical idempotent retry.
+   * When a sink is given, record exactly one notice after a new handoff commits and
+   * none for a retry. A sink failure must not fail the committed send.
+   */
+  create(
+    sender: string,
+    input: CreateHandoffInput,
+    maxDepth: number,
+    notificationSink?: NotificationSink,
+  ): MaybePromise<Handoff>;
   get(id: string): MaybePromise<Handoff>;
   find(id: string): MaybePromise<Handoff | undefined>;
   inbox(recipient: string, statuses: HandoffStatus[], limit: number): MaybePromise<Handoff[]>;

@@ -2,6 +2,7 @@ import { AgentRegistry } from "./registry.js";
 import { HandoffService } from "./service.js";
 import { HandoffStore } from "./store.js";
 import { PostgresHandoffStore } from "./store-postgres.js";
+import { FileNotificationSink } from "./notifications.js";
 
 import type { AppConfig } from "./config.js";
 import type { HandoffStoreAdapter } from "./store-adapter.js";
@@ -24,6 +25,7 @@ export function createRuntime(config: AppConfig): {
   const service = new HandoffService(registry, store, {
     maxMessageBytes: config.maxMessageBytes,
     maxHandoffDepth: config.maxHandoffDepth,
+    ...(config.notificationFile ? { notificationSink: new FileNotificationSink(config.notificationFile) } : {}),
   });
   return { registry, store, service };
 }
