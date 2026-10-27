@@ -16,7 +16,7 @@ flowchart LR
 
 `service.ts` resolves a request-scoped principal against one policy snapshot for every tool call and owns participant authorization, disclosure checks, historical-read denial, message limits, and the public handoff operations.
 
-`store.ts` owns SQLite schema, transactions, idempotency, lifecycle transitions, and the event history. SQL statements are fixed and parameterized.
+`store.ts` owns SQLite schema, transactions, idempotency, lifecycle transitions, and the event history. SQL statements are fixed and parameterized. `store-adapter.ts` defines the store interface the service depends on; `store-postgres.ts` is an experimental Postgres implementation for multi-host use, selected with `HANDOFF_STORE=postgres` (see `STORE-POSTGRES.md`).
 
 `server.ts` maps the service to six MCP tools with strict Zod input schemas.
 

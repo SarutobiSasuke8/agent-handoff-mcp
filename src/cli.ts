@@ -66,6 +66,9 @@ async function main(argv: string[]): Promise<number> {
         options: { db: { type: "string" }, registry: { type: "string" }, force: { type: "boolean" } } });
       if (positionals.length !== 1 || (command === "backup" && values.force)) throw new Error("Supply one recovery file; --force is only for restore.");
       const config = loadConfig();
+      if (config.storeKind === "postgres" && !values.db) {
+        throw new Error("backup and restore cover the SQLite store only; for HANDOFF_STORE=postgres use pg_dump/pg_restore (docs/STORE-POSTGRES.md).");
+      }
       const database = values.db ?? config.databaseFile;
       const registry = values.registry ?? config.registryFile;
       if (command === "backup") backup(database, registry, positionals[0]!);

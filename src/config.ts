@@ -6,6 +6,8 @@ const envSchema = z.object({
   HANDOFF_MCP_HOST: z.string().default("127.0.0.1"),
   HANDOFF_MCP_PORT: z.coerce.number().int().min(1).max(65535).default(3220),
   HANDOFF_MCP_DB: z.string().default("./data/handoffs.sqlite"),
+  HANDOFF_STORE: z.enum(["sqlite", "postgres"]).default("sqlite"),
+  HANDOFF_PG_URL: z.string().min(1).optional(),
   HANDOFF_MCP_REGISTRY: z.string().default("./config/agents.yaml"),
   HANDOFF_MCP_NOTIFICATION_FILE: z.string().min(1).optional(),
   HANDOFF_MCP_ALLOWED_HOSTS: z.string().optional(),
@@ -28,6 +30,10 @@ export interface AppConfig {
   host: string;
   port: number;
   databaseFile: string;
+  /** "sqlite" (default) or "postgres" (experimental, needs HANDOFF_PG_URL). */
+  storeKind: "sqlite" | "postgres";
+  /** Postgres connection string. Never logged. */
+  postgresUrl?: string;
   registryFile: string;
   notificationFile?: string;
   allowedHosts?: string[];
@@ -42,12 +48,17 @@ export interface AppConfig {
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const parsed = envSchema.parse(env);
+  if (parsed.HANDOFF_STORE === "postgres" && !parsed.HANDOFF_PG_URL) {
+    throw new Error("HANDOFF_STORE=postgres requires HANDOFF_PG_URL.");
+  }
   const allowedHosts = csv(parsed.HANDOFF_MCP_ALLOWED_HOSTS);
   const allowedOrigins = csv(parsed.HANDOFF_MCP_ALLOWED_ORIGINS);
   return {
     host: parsed.HANDOFF_MCP_HOST,
     port: parsed.HANDOFF_MCP_PORT,
     databaseFile: path.resolve(parsed.HANDOFF_MCP_DB),
+    storeKind: parsed.HANDOFF_STORE,
+    ...(parsed.HANDOFF_STORE === "postgres" && parsed.HANDOFF_PG_URL ? { postgresUrl: parsed.HANDOFF_PG_URL } : {}),
     registryFile: path.resolve(parsed.HANDOFF_MCP_REGISTRY),
     ...(parsed.HANDOFF_MCP_NOTIFICATION_FILE ? { notificationFile: path.resolve(parsed.HANDOFF_MCP_NOTIFICATION_FILE) } : {}),
     ...(allowedHosts ? { allowedHosts } : {}),
