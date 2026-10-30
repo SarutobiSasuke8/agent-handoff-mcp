@@ -96,7 +96,7 @@
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.8",
-    "@electric-sql/pglite-socket": "0.2.11",
+    "@electric-sql/pglite-socket": "0.2.15",
     "@eslint/js": "10.0.1",
     "@modelcontextprotocol/client": "^2.3.1",
     "@sarutobi-sasuke/mcp-eval-harness": "github:SarutobiSasuke8/mcp-eval-harness#077c74a60ccd6d9061e35f882ffd3db5f5d17052",
