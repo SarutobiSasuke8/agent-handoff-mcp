@@ -12,20 +12,20 @@ import type { ErrorRequestHandler, Express, RequestHandler } from "express";
 import type { AppConfig } from "./config.js";
 import type { AgentRegistry } from "./registry.js";
 import type { HandoffService } from "./service.js";
-import type { HandoffStore } from "./store.js";
+import type { HandoffStoreAdapter } from "./store-adapter.js";
 
 export interface HttpApp {
   app: Express;
   registry: AgentRegistry;
-  store: HandoffStore;
+  store: HandoffStoreAdapter;
   service: HandoffService;
   close: () => Promise<void>;
 }
 
 export async function buildHttpApp(config: AppConfig): Promise<HttpApp> {
   const { registry, store, service } = createRuntime(config);
-  try { await registry.current(); }
-  catch (error) { store.close(); throw error; }
+  try { await store.ready(); await registry.current(); }
+  catch (error) { await store.close(); throw error; }
 
   const app = createMcpExpressApp({
     host: config.host,
@@ -117,7 +117,7 @@ export async function buildHttpApp(config: AppConfig): Promise<HttpApp> {
     store,
     service,
     close: async () => {
-      store.close();
+      await store.close();
     },
   };
 }
