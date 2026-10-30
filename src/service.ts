@@ -4,7 +4,7 @@ import { DomainError } from "./errors.js";
 import { permitsSensitivity } from "./registry.js";
 
 import type { AgentRegistry, PolicySnapshot } from "./registry.js";
-import type { HandoffStore } from "./store.js";
+import type { HandoffStoreAdapter } from "./store-adapter.js";
 import type { NotificationSink } from "./notifications.js";
 import type { AgentDefinition, CreateHandoffInput, Handoff, HandoffStatus } from "./types.js";
 
@@ -28,7 +28,7 @@ function inaccessible(handoffId: string): Error {
 export class HandoffService {
   public constructor(
     private readonly registry: AgentRegistry,
-    private readonly store: HandoffStore,
+    private readonly store: HandoffStoreAdapter,
     private readonly options: ServiceOptions,
   ) {}
 
@@ -49,22 +49,22 @@ export class HandoffService {
     const principal = await this.principal(agentId);
     principal.snapshot.assertCanSend(agentId, input.recipient, input.sensitivity);
     if (input.parentId) {
-      const parent = this.store.find(input.parentId);
+      const parent = await this.store.find(input.parentId);
       if (!parent || !this.canAccess(principal, parent)) throw inaccessible(input.parentId);
     }
-    return this.store.create(agentId, input, this.options.maxHandoffDepth, this.options.notificationSink);
+    return await this.store.create(agentId, input, this.options.maxHandoffDepth, this.options.notificationSink);
   }
 
   public async inbox(agentId: string, statuses: HandoffStatus[], limit: number): Promise<Handoff[]> {
     const principal = await this.principal(agentId);
-    return this.store.inbox(agentId, statuses, limit).filter((handoff) => this.canAccess(principal, handoff));
+    return (await this.store.inbox(agentId, statuses, limit)).filter((handoff) => this.canAccess(principal, handoff));
   }
 
   public async get(agentId: string, handoffId: string): Promise<{ handoff: Handoff; events: unknown[] }> {
     const principal = await this.principal(agentId);
-    const handoff = this.store.find(handoffId);
+    const handoff = await this.store.find(handoffId);
     if (!handoff || !this.canAccess(principal, handoff)) throw inaccessible(handoffId);
-    return { handoff, events: this.store.events(handoffId) };
+    return { handoff, events: await this.store.events(handoffId) };
   }
 
   public async acknowledge(agentId: string, handoffId: string, note?: string): Promise<Handoff> {
@@ -88,9 +88,9 @@ export class HandoffService {
   ): Promise<Handoff> {
     if (note) this.assertTextSize(note, "note");
     const principal = await this.principal(agentId);
-    const handoff = this.store.find(handoffId);
+    const handoff = await this.store.find(handoffId);
     if (!handoff || !this.canAccess(principal, handoff)) throw inaccessible(handoffId);
-    return this.store.transition(handoffId, agentId, status, note);
+    return await this.store.transition(handoffId, agentId, status, note);
   }
 
   /**
