@@ -9,7 +9,7 @@
 
 See [the validation record](docs/RELEASE_EVIDENCE_2026-10-01.md) for scope and limits.
 
-## v0.1 â€” protocol core
+## v0.1 — protocol core
 
 - [x] HTTP and stdio MCP transports
 - [x] explicit agent relationships and disclosure ceilings
