@@ -4,8 +4,8 @@
 
 - [x] Re-run unit checks and packed HTTP/stdio conformance on the remediated candidate: 33 unit and 7 end-to-end tests pass on Windows/Node 22.
 - [x] Require a version tag for manual publication and use a trusted-publishing-capable npm release toolchain.
-- [ ] Complete trusted-publisher administration and the first hosted tag release.
-- [ ] Cold-install the published artifact and capture actual client workflow evidence.
+- [x] Complete trusted-publisher administration and the first hosted tag release ([verified provenance](docs/RELEASE_EVIDENCE_2026-11-02.md)).
+- [x] Cold-install the published artifact and capture actual client workflow evidence ([Windows/Node 22 evidence](docs/RELEASE_EVIDENCE_2026-11-02.md)).
 
 See [the validation record](docs/RELEASE_EVIDENCE_2026-10-01.md) for scope and limits.
 
