@@ -105,7 +105,7 @@
     "@types/pg": "8.23.1",
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1",
-    "eslint": "10.13.0",
+    "eslint": "10.14.0",
     "tsx": "4.23.15",
     "typescript": "5.9.3",
     "typescript-eslint": "8.72.1",
