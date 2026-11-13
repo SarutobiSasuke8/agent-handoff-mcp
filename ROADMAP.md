@@ -22,7 +22,7 @@ See [the validation record](docs/RELEASE_EVIDENCE_2026-10-01.md) for scope and l
 
 - [ ] MCP Inspector compatibility fixture and recorded demo
 - [ ] Postgres store adapter for multi-host deployments
-- [ ] optional inbox notifications without content leakage
+- [x] optional inbox notifications without content leakage
 - [ ] schema migrations and backup/restore commands
 - [x] token provisioning and revocation CLI
 - [ ] OpenTelemetry-compatible operational metrics

@@ -59,7 +59,7 @@ const shortText = z.string().trim().min(1).max(500);
 const reference = z.string().trim().min(1).max(500);
 
 export function createHandoffMcpServer(service: HandoffService, fixedAgentId?: string): McpServer {
-  const server = new McpServer({ name: "agent-handoff-mcp", version: "0.1.0" });
+  const server = new McpServer({ name: "agent-handoff-mcp", version: "0.2.0" });
 
   server.registerTool(
     "handoff_whoami",
