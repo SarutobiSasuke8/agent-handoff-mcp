@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { execFileSync, spawn } from "node:child_process";
 import { mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
+import { createServer } from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
@@ -22,18 +23,37 @@ function npm(args: string[], cwd: string): string {
   });
 }
 
-async function waitFor(url: string, attempts = 50): Promise<void> {
+async function reserveLoopbackPort(): Promise<number> {
+  const reservation = createServer();
+  await new Promise<void>((resolve, reject) => {
+    reservation.once("error", reject);
+    reservation.listen(0, "127.0.0.1", resolve);
+  });
+  const address = reservation.address();
+  assert.ok(address && typeof address !== "string");
+  await new Promise<void>((resolve, reject) => reservation.close((error) => error ? reject(error) : resolve()));
+  return address.port;
+}
+
+function errorDetails(error: unknown): string {
+  if (!(error instanceof Error)) return String(error);
+  return error.cause === undefined ? error.message : `${error.message}: ${errorDetails(error.cause)}`;
+}
+
+async function waitFor(url: string, diagnostics: () => string, attempts = 50): Promise<void> {
+  let lastFailure = "no response";
   for (let i = 0; i < attempts; i += 1) {
     try {
       const response = await fetch(url);
       await response.arrayBuffer();
       if (response.ok) return;
-    } catch {
-      // Server not up yet.
+      lastFailure = `HTTP ${response.status}`;
+    } catch (error) {
+      lastFailure = errorDetails(error);
     }
     await new Promise((resolve) => setTimeout(resolve, 200));
   }
-  throw new Error(`Server did not become healthy at ${url}.`);
+  throw new Error(`Server did not become healthy at ${url}. Last failure: ${lastFailure}. ${diagnostics()}`);
 }
 
 interface ToolOutcome {
@@ -124,27 +144,52 @@ void test("packed tarball installs and serves both transports from a clean direc
 
   // 6. Installed HTTP server: health, readiness, allowed lifecycle, denied
   //    read, persistence across restart, shutdown.
-  const port = 3220 + Math.floor(Math.random() * 2000);
-  const httpEnv = {
-    ...process.env,
-    HANDOFF_MCP_PORT: String(port),
-    HANDOFF_MCP_DB: database,
-    HANDOFF_MCP_REGISTRY: registry,
-  };
-  const startServer = (): ChildProcess => spawn(process.execPath, [cliEntry, "http"], { env: httpEnv, stdio: "ignore" });
+  let port = 0; // Assigned before a successful startServer() returns.
   const stopServer = async (child: ChildProcess): Promise<void> => {
+    if (child.exitCode !== null || child.signalCode !== null || child.pid === undefined) return;
     const exited = new Promise((resolve) => child.once("exit", resolve));
     child.kill("SIGTERM");
     const forceTimer = setTimeout(() => child.kill("SIGKILL"), 5_000);
-    await exited;
-    clearTimeout(forceTimer);
+    try {
+      await exited;
+    } finally {
+      clearTimeout(forceTimer);
+    }
+  };
+  const startServer = async (): Promise<ChildProcess> => {
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      // Reserve a high OS-assigned port instead of sampling a range that
+      // includes fetch-forbidden 5060/5061. Retry the release/spawn race only.
+      port = await reserveLoopbackPort();
+      const child = spawn(process.execPath, [cliEntry, "http"], {
+        env: {
+          ...process.env,
+          HANDOFF_MCP_PORT: String(port),
+          HANDOFF_MCP_DB: database,
+          HANDOFF_MCP_REGISTRY: registry,
+        },
+        stdio: ["ignore", "ignore", "pipe"],
+      });
+      let stderr = "";
+      let spawnError = "";
+      child.stderr?.setEncoding("utf8");
+      child.stderr?.on("data", (chunk: string) => { stderr = (stderr + chunk).slice(-4096); });
+      child.once("error", (error) => { spawnError = errorDetails(error); });
+      const diagnostics = (): string => `Child exit=${child.exitCode}, signal=${child.signalCode}, spawn=${spawnError}; stderr (last 4096 chars): ${stderr}`;
+      try {
+        await waitFor(`http://127.0.0.1:${port}/healthz`, diagnostics);
+        await waitFor(`http://127.0.0.1:${port}/readyz`, diagnostics);
+        return child;
+      } catch (error) {
+        await stopServer(child);
+        if (!stderr.includes("EADDRINUSE") || attempt === 2) throw error;
+      }
+    }
+    throw new Error("HTTP startup retries exhausted");
   };
 
-  let server = startServer();
+  let server = await startServer();
   try {
-    await waitFor(`http://127.0.0.1:${port}/healthz`);
-    await waitFor(`http://127.0.0.1:${port}/readyz`);
-
     const connect = async (token: string): Promise<Client> => {
       const client = new Client({ name: "pack-http", version: "0.0.0" });
       await client.connect(new StreamableHTTPClientTransport(new URL(`http://127.0.0.1:${port}/mcp`), {
@@ -184,8 +229,7 @@ void test("packed tarball installs and serves both transports from a clean direc
 
     // Restart persistence.
     await stopServer(server);
-    server = startServer();
-    await waitFor(`http://127.0.0.1:${port}/healthz`);
+    server = await startServer();
     const betaAgain = await connect(betaToken);
     const inbox = await callTool(betaAgain, "handoff_inbox", {});
     assert.ok(inbox.ok, inbox.text);
