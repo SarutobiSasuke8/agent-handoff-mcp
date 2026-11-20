@@ -7,12 +7,12 @@
     "url": "https://github.com/SarutobiSasuke8/agent-handoff-mcp",
     "source": "github"
   },
-  "version": "0.1.0",
+  "version": "0.2.0",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@sarutobi-sasuke/agent-handoff-mcp",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "transport": {
         "type": "stdio"
       },

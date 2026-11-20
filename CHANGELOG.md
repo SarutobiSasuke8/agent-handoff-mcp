@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - unreleased
+
+The date is set when the `v0.2.0` tag is pushed; see `RELEASING.md`.
+
+### Security
+
+- A fresh install of 0.1.0 reports one moderate `npm audit` finding,
+  `@hono/node-server` (GHSA-rmxm-3fg6-px4f), pulled in through the MCP SDK.
+  This release pins `@hono/node-server` 2.0.12 and updates the SDK packages;
+  a fresh install of the packed 0.2.0 tarball reports 0 findings.
+
+### Optional inbox notifications
+
+- Add opt-in, metadata-only handoff notifications through
+  `HANDOFF_MCP_NOTIFICATION_FILE` (#59). Off by default. Each JSONL line holds
+  only the handoff id, sender, recipient, status and timestamp.
+
 ### Store adapter interface and experimental Postgres store
 
 - Extract `HandoffStoreAdapter` (`src/store-adapter.ts`). The SQLite
@@ -122,5 +139,6 @@ candidate on `main`.
   evidence are excluded, and `scripts/verify-pack.mjs` enforces this.
 - Requires Node 22.13 or later.
 
-[Unreleased]: https://github.com/SarutobiSasuke8/agent-handoff-mcp/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/SarutobiSasuke8/agent-handoff-mcp/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/SarutobiSasuke8/agent-handoff-mcp/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/SarutobiSasuke8/agent-handoff-mcp/releases/tag/v0.1.0
